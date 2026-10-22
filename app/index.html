@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cavern of Code · Tech Quest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+</head>
+<body>
+  <div class="cave-bg"></div>
+  <canvas id="embers"></canvas>
+  <div class="vignette"></div>
+  <canvas id="confetti"></canvas>
+
+  <!-- Name entry -->
+  <section id="s-name" class="screen" hidden>
+    <div class="torch l"></div><div class="torch r"></div>
+    <div class="hero">
+      <div class="kicker">BCA Department presents · Tech Quest</div>
+      <div class="hero-art" id="hero-art"></div>
+      <h1 class="title">CAVERN<br>OF CODE</h1>
+      <p class="sub">Slay 12 monsters. Defeat The Summarizer. Claim the chest.</p>
+      <form id="join" class="panel join" autocomplete="off">
+        <input id="name" class="field" maxlength="40" placeholder="Enter your full name" aria-label="Your name" required>
+        <button class="btn" id="join-btn" type="submit">⚔ ENTER THE CAVERN</button>
+        <p class="err" id="join-err" role="alert"></p>
+      </form>
+      <div class="rules">
+        <span>✔ Correct: <b>monster falls</b></span>
+        <span>✘ Wrong: <b>+10 sec</b></span>
+        <span>⏱ Fastest time <b>wins</b></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Waiting room -->
+  <section id="s-lobby" class="screen" hidden>
+    <div class="torch l"></div><div class="torch r"></div>
+    <div class="panel lobby">
+      <div class="kicker">Welcome, adventurer</div>
+      <h2 class="title" id="lobby-name"></h2>
+      <div class="gate">The Gatekeeper will open the cavern soon<span class="dots"><span>.</span><span>.</span><span>.</span></span></div>
+      <div class="count" id="lobby-count">0</div>
+      <div class="kicker">players ready</div>
+      <div class="names" id="lobby-names"></div>
+      <div class="lobby-art" id="lobby-art"></div>
+      <div class="how">
+        <div><b>1 · SLAY</b>12 monsters, 4 zones. Click an answer or press 1–4.</div>
+        <div><b>2 · BOSS</b>Pick easy, medium or hard hits to drain 100 HP.</div>
+        <div><b>3 · WIN</b>Fastest time wins. A wrong answer adds 10 sec.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Game -->
+  <section id="s-game" class="game" hidden>
+    <header class="hud panel">
+      <div class="zone-badge">
+        <div class="zone-gem"></div>
+        <div><div class="zone-name" id="zone-name"></div><div class="zone-domain" id="zone-domain"></div></div>
+      </div>
+      <div class="track" id="track" aria-label="Progress"></div>
+      <div class="timers">
+        <button class="mute" id="mute" aria-label="Toggle sound" title="Toggle sound">🔊</button>
+        <div class="hearts" id="hearts" aria-label="Hearts"></div>
+        <div class="timer"><div class="lbl">Your time</div><div class="val" id="my-time">00:00</div><div class="pen" id="my-pen"></div></div>
+        <div class="timer event" id="ev-timer"><div class="lbl">Cavern closes</div><div class="val" id="ev-time">20:00</div></div>
+      </div>
+    </header>
+    <div class="runes" id="runes" aria-label="Collected letters"></div>
+    <div class="stage" id="stage">
+      <div class="stage-torch l"></div><div class="stage-torch r"></div>
+      <div class="actor" id="knight"><div class="body"></div><div class="shadow"></div></div>
+      <div class="actor" id="enemy"><div class="nameplate" id="nameplate"></div><div class="body"></div><div class="shadow"></div></div>
+      <div class="fx" id="fx"></div>
+    </div>
+    <div class="qcard panel" id="qcard"></div>
+    <aside class="side panel">
+      <h3><span class="live-dot"></span> LIVE LEADERBOARD</h3>
+      <ol class="lb" id="lb"></ol>
+      <div class="my-rank">Your rank<b id="my-rank">–</b></div>
+    </aside>
+  </section>
+
+  <!-- End -->
+  <section id="s-end" class="screen" hidden>
+    <div class="panel end" id="end"></div>
+  </section>
+
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>

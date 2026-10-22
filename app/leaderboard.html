@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leaderboard · Cavern of Code</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
+</head>
+<body>
+  <div class="cave-bg"></div>
+  <canvas id="embers"></canvas>
+  <div class="vignette"></div>
+  <main class="board">
+    <div class="board-head">
+      <div>
+        <div class="kicker">Tech Quest · Live</div>
+        <h1 class="title">CAVERN OF CODE</h1>
+      </div>
+      <div class="big-timer" id="bt"><div class="lbl" id="bt-lbl">Waiting to start</div><div class="val" id="bt-val">--:--</div></div>
+    </div>
+    <div class="podium" id="podium"></div>
+    <div style="min-height:0;overflow:hidden">
+      <ol class="board-list" id="list"></ol>
+      <p class="board-empty" id="empty">No adventurers yet. Open the game on the PCs and enter their name!</p>
+    </div>
+  </main>
+  <script type="module">
+    import { sb, syncClock, now, fmt, eventEnd, eventPhase, rank, progressPct, esc, fetchEvent, fetchPlayers, flipList, embers, TOTAL_STAGES } from './js/common.js';
+    const $ = id => document.getElementById(id);
+    let ev = null, players = [];
+    embers($('embers'));
+
+    const label = p => p.finished_at ? fmt(p.total_ms) : p.stage >= TOTAL_STAGES ? `BOSS ${p.boss_hp}HP` : `${p.stage}/12`;
+
+    function render() {
+      const r = rank(players);
+      $('empty').hidden = r.length > 0;
+      const medals = ['🥇', '🥈', '🥉'];
+      // podium order: 2nd, 1st, 3rd
+      $('podium').innerHTML = [1, 0, 2].map(i => {
+        const p = r[i];
+        return `<div class="pod p${i + 1} ${p ? '' : 'empty'}"><div class="medal">${medals[i]}</div><div class="pn">${p ? esc(p.name) : '—'}</div><div class="pt">${p ? label(p) : ''}</div></div>`;
+      }).join('');
+      flipList($('list'), r.slice(3, 33), p => p.id, (p, i) => `
+        <span class="r">#${i + 4}</span>
+        <span class="nm">${esc(p.name)}</span>
+        <span class="bar"><i style="width:${progressPct(p)}%"></i></span>
+        <span class="tm ${p.finished_at ? 'fin' : ''}">${label(p)}</span>`);
+      [...$('list').children].forEach((li, i) => li.classList.toggle('top10', i + 4 <= 10));
+    }
+
+    function tick() {
+      const phase = eventPhase(ev);
+      const bt = $('bt');
+      if (phase === 'running') {
+        const left = eventEnd(ev) - now();
+        $('bt-lbl').textContent = 'Cavern closes in';
+        $('bt-val').textContent = fmt(left);
+        bt.classList.toggle('low', left < 60000);
+      } else {
+        bt.classList.remove('low');
+        $('bt-lbl').textContent = phase === 'ended' ? 'Cavern closed' : 'Waiting to start';
+        $('bt-val').textContent = phase === 'ended' ? '00:00' : fmt((ev?.duration_sec || 1200) * 1000);
+      }
+    }
+
+    async function refresh() { players = await fetchPlayers(); render(); }
+    await syncClock();
+    ev = await fetchEvent();
+    await refresh();
+    sb.channel('board')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'event_state' }, p => { ev = p.new; })
+      .subscribe();
+    setInterval(refresh, 4000);
+    setInterval(async () => { ev = (await fetchEvent()) || ev; }, 5000);
+    setInterval(tick, 250);
+  </script>
+</body>
+</html>

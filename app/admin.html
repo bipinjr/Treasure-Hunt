@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gatekeeper · Cavern of Code</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗝️</text></svg>">
+</head>
+<body class="admin">
+  <div class="cave-bg"></div>
+  <div class="vignette" style="z-index:-1"></div>
+
+  <section id="login-screen" class="screen">
+    <form class="panel login" id="login">
+      <div class="kicker">Gatekeeper</div>
+      <h1 class="title" style="font-size:22px">ADMIN</h1>
+      <input class="field" type="password" id="pw" placeholder="Admin password" aria-label="Admin password" autocomplete="current-password" required>
+      <button class="btn" type="submit">UNLOCK</button>
+      <p class="msg err" id="login-msg" role="alert"></p>
+    </form>
+  </section>
+
+  <main class="admin-wrap" id="panel" hidden>
+    <div class="row" style="justify-content:space-between">
+      <h1 class="title">GATEKEEPER PANEL</h1>
+      <div class="row">
+        <a class="btn ghost" href="leaderboard.html" target="_blank" style="text-decoration:none;font-size:12px;padding:12px 16px">Open leaderboard ↗</a>
+        <button class="btn ghost" id="logout" style="font-size:12px;padding:12px 16px">Lock</button>
+      </div>
+    </div>
+
+    <div class="panel admin-card">
+      <h3>ROUND</h3>
+      <div class="row">
+        <span class="status-pill" id="status">–</span>
+        <span style="font-family:var(--display);font-size:28px;color:var(--gold)" id="clock">--:--</span>
+        <span style="color:var(--muted)" id="count"></span>
+      </div>
+      <div class="row">
+        <label for="mins" style="color:var(--muted)">Minutes</label>
+        <input class="field" id="mins" type="number" min="1" max="120" value="20" style="max-width:110px;flex:none">
+        <button class="btn" id="start">▶ START ROUND</button>
+        <button class="btn ghost" id="end">■ END NOW</button>
+        <button class="btn danger" id="reset">⟲ RESET ALL</button>
+      </div>
+      <p class="msg" id="msg"></p>
+    </div>
+
+    <div class="panel admin-card">
+      <h3>CHEST CLUE (shown to winners)</h3>
+      <div class="row">
+        <input class="field" id="clue" maxlength="300">
+        <button class="btn" id="save-clue">SAVE</button>
+      </div>
+    </div>
+
+    <div class="panel admin-card">
+      <h3>PLAYERS</h3>
+      <table class="admin-table">
+        <thead><tr><th>#</th><th>Player</th><th>Progress</th><th>Correct</th><th>Wrong</th><th>Time</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div class="panel admin-card">
+      <h3>CHANGE PASSWORD</h3>
+      <div class="row">
+        <input class="field" type="password" id="newpw" placeholder="New password" autocomplete="new-password">
+        <button class="btn ghost" id="setpw">UPDATE</button>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { sb, syncClock, now, fmt, eventEnd, eventPhase, rank, esc, fetchEvent, fetchPlayers, TOTAL_STAGES } from './js/common.js';
+    const $ = id => document.getElementById(id);
+    let pw = sessionStorage.getItem('tq_admin') || '';
+    let ev = null, players = [];
+
+    const msg = (t, err) => { $('msg').textContent = t; $('msg').className = 'msg' + (err ? ' err' : ''); };
+    async function call(fn, args = {}) {
+      const { error } = await sb.rpc(fn, { pw, ...args });
+      if (error) { msg(error.message, true); return false; }
+      return true;
+    }
+
+    async function unlock(p) {
+      const { error } = await sb.rpc('admin_login', { pw: p });
+      if (error) { $('login-msg').textContent = 'Wrong password'; sessionStorage.removeItem('tq_admin'); return; }
+      pw = p; sessionStorage.setItem('tq_admin', p);
+      $('login-screen').hidden = true; $('panel').hidden = false;
+      await syncClock(); await refresh();
+      $('clue').value = ev?.clue || '';
+    }
+    $('login').onsubmit = e => { e.preventDefault(); unlock($('pw').value); };
+    $('logout').onclick = () => { sessionStorage.removeItem('tq_admin'); location.reload(); };
+    if (pw) unlock(pw);
+
+    async function refresh() {
+      [ev, players] = await Promise.all([fetchEvent(), fetchPlayers()]);
+      const r = rank(players);
+      $('count').textContent = `${players.length} players · ${players.filter(p => p.finished_at).length} finished`;
+      $('rows').innerHTML = r.map((p, i) => `<tr>
+        <td>${i + 1}</td><td>${esc(p.name)}</td>
+        <td>${p.finished_at ? '✔ Finished' : p.stage >= TOTAL_STAGES ? `Boss (${p.boss_hp} HP)` : `${p.stage}/12`}</td>
+        <td>${p.correct}</td><td>${p.wrong}</td>
+        <td>${p.finished_at ? fmt(p.total_ms) : '–'}</td>
+        <td><button data-id="${p.id}" data-n="${esc(p.name)}">Remove</button></td></tr>`).join('');
+      $('rows').querySelectorAll('button').forEach(b => b.onclick = async () => {
+        if (confirm(`Remove "${b.dataset.n}" from the game?`) && await call('admin_delete_player', { p_id: b.dataset.id })) refresh();
+      });
+    }
+
+    function tick() {
+      if (!ev) return;
+      const phase = eventPhase(ev);
+      $('status').textContent = phase.toUpperCase();
+      $('status').className = 'status-pill ' + phase;
+      $('clock').textContent = phase === 'running' ? fmt(eventEnd(ev) - now()) : phase === 'ended' ? '00:00' : fmt(ev.duration_sec * 1000);
+    }
+
+    $('start').onclick = async () => {
+      const m = Math.max(1, Math.min(120, parseInt($('mins').value, 10) || 20));
+      if (eventPhase(ev) === 'running' && !confirm('A round is running. Restart the clock from now?')) return;
+      if (await call('admin_start', { minutes: m })) { msg(`Round started: ${m} minutes. Good luck, adventurers!`); refresh(); }
+    };
+    $('end').onclick = async () => { if (confirm('End the round now for everyone?') && await call('admin_end')) { msg('Round ended.'); refresh(); } };
+    $('reset').onclick = async () => {
+      if (confirm('Delete ALL players and scores and go back to waiting? This cannot be undone.') && await call('admin_reset')) { msg('Everything reset. Players will return to the name screen.'); refresh(); }
+    };
+    $('save-clue').onclick = async () => { if (await call('admin_set_clue', { p_clue: $('clue').value.trim() })) msg('Clue saved.'); };
+    $('setpw').onclick = async () => {
+      const n = $('newpw').value;
+      if (n.length < 4) { msg('Password must be at least 4 characters.', true); return; }
+      if (await call('admin_set_password', { new_pw: n })) { pw = n; sessionStorage.setItem('tq_admin', n); $('newpw').value = ''; msg('Password updated.'); }
+    };
+
+    setInterval(() => { if (!$('panel').hidden) refresh(); }, 3000);
+    setInterval(tick, 250);
+  </script>
+</body>
+</html>
