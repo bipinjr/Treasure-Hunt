@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cavern of Code · Tech Quest</title>
   <link rel="preload" href="fonts/pressstart-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="fonts/pixelify-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
 </head>
@@ -35,8 +35,26 @@
         <span>⭐ Bonus chest: <b>−20 sec</b></span>
         <span>⏱ Fastest time <b>wins</b></span>
       </div>
-      <p class="organiser"><a href="admin.html">Organiser login</a></p>
+      <a class="scroll-hint" href="#showcase">See what's inside ↓</a>
     </div>
+
+    <section class="showcase" id="showcase" aria-labelledby="showcase-title">
+      <h2 class="title reveal" id="showcase-title">What's inside the cavern</h2>
+      <p class="showcase-sub reveal">Not a boring quiz. Play your way through four zones of hands-on challenges.</p>
+      <div class="zone-cards">
+        <article class="zone-card reveal" style="--c:#5b8def"><div class="zc-art" data-sprite="skeleton"></div><h3>Crypt of Cipher</h3><p>Data</p><ul><li>💡 Light the bulbs</li><li>🔐 Crack the code</li><li>🎯 Shooting gallery</li></ul></article>
+        <article class="zone-card reveal" style="--c:#ff8a3d"><div class="zc-art" data-sprite="robot" data-tint="forge"></div><h3>Forge of Logic</h3><p>Programming</p><ul><li>🤖 Robot coder</li><li>🏎️ Lane racer</li><li>🧩 Put it in order</li></ul></article>
+        <article class="zone-card reveal" style="--c:#3ddc84"><div class="zc-art" data-sprite="ghost" data-tint="shields"></div><h3>Gate of Shields</h3><p>Cybersecurity</p><ul><li>🛡️ Safe or scam?</li><li>🎯 Shoot the scams</li><li>🔒 Rank the passwords</li></ul></article>
+        <article class="zone-card reveal" style="--c:#c27bff"><div class="zc-art" data-sprite="robot" data-tint="heart"></div><h3>Heart of the Cave</h3><p>AI</p><ul><li>🏎️ Race the AI gates</li><li>🕵️ Spot the AI photo</li><li>🧠 How AI learns</li></ul></article>
+      </div>
+      <div class="win-strip reveal">
+        <div><b>⏱</b><span>Fastest time wins</span></div>
+        <div><b>⭐</b><span>Collect stars on the first try</span></div>
+        <div><b>🎁</b><span>Bonus chests: −20 sec</span></div>
+        <div><b>👑</b><span>Beat The Summarizer</span></div>
+      </div>
+      <p class="organiser reveal"><a href="admin.html">Organiser login</a></p>
+    </section>
   </section>
 
   <!-- Rules: must be accepted before joining -->
@@ -97,7 +115,7 @@
         <button class="mute" id="mute" aria-label="Toggle sound" title="Toggle sound">🔊</button>
         <div class="hearts" id="hearts" aria-label="Hearts"></div>
         <div class="timer"><div class="lbl">Your time</div><div class="val" id="my-time">00:00</div><div class="pen" id="my-pen"></div></div>
-        <div class="timer event" id="ev-timer"><div class="lbl">Cavern closes</div><div class="val" id="ev-time">20:00</div></div>
+        <div class="timer event" id="ev-timer"><div class="lbl">Time left</div><div class="val" id="ev-time">20:00</div></div>
       </div>
     </header>
     <div class="runes" id="runes" aria-label="Collected letters"></div>

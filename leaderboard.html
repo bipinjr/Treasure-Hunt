@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Leaderboard · Cavern of Code</title>
   <link rel="preload" href="fonts/pressstart-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="fonts/pixelify-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏆</text></svg>">
 </head>
@@ -28,12 +28,12 @@
     </div>
   </main>
   <script type="module">
-    import { sb, syncClock, now, fmt, eventEnd, eventPhase, rank, progressPct, esc, fetchEvent, fetchPlayers, flipList, embers, stageLabel } from './js/common.js';
+    import { sb, syncClock, now, fmt, eventPhase, rank, progressPct, esc, fetchEvent, fetchPlayers, flipList, embers, stageLabel } from './js/common.js';
     const $ = id => document.getElementById(id);
     let ev = null, players = [];
     embers($('embers'));
 
-    const label = p => (p.bonus_count ? `⭐${p.bonus_count} ` : '') + stageLabel(p);
+    const label = p => `⭐${p.stars || 0} · ${stageLabel(p)}`;
 
     function render() {
       const r = rank(players);
@@ -55,18 +55,10 @@
     }
 
     function tick() {
-      const phase = eventPhase(ev);
-      const bt = $('bt');
-      if (phase === 'running') {
-        const left = eventEnd(ev) - now();
-        $('bt-lbl').textContent = 'Cavern closes in';
-        $('bt-val').textContent = fmt(left);
-        bt.classList.toggle('low', left < 60000);
-      } else {
-        bt.classList.remove('low');
-        $('bt-lbl').textContent = phase === 'ended' ? 'Cavern closed' : 'Waiting to start';
-        $('bt-val').textContent = phase === 'ended' ? '00:00' : fmt((ev?.duration_sec || 1200) * 1000);
-      }
+      // everyone has their own clock now, so the projector shows how many are in the cavern
+      const open = eventPhase(ev) === 'open';
+      $('bt-lbl').textContent = open ? `In the cavern now · ${Math.round((ev?.duration_sec || 1200) / 60)} min each` : 'Cavern closed';
+      $('bt-val').textContent = open ? String(players.filter(p => !p.finished_at).length) : '—';
     }
 
     // 120 players answering means many change events; coalesce them into at most one fetch per second

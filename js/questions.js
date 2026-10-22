@@ -1,165 +1,182 @@
-// All game content. Edit freely: `answer` must exactly match one of `choices`.
-// Choices are shuffled at runtime, so order here does not matter.
+// All game content. Quiz items: `answer` must exactly match one of `choices` (shuffled at runtime).
+// Activity items have a `type`; see js/activities.js for each type's fields.
 
-// `guide` is shown when a player enters the zone: short tips for solving its questions.
+// `guide` is shown when a player enters the zone: short tips for its challenges.
 export const ZONES = [
   { id: 'crypt',   name: 'Crypt of Cipher',   domain: 'Data',          accent: '#5b8def', guide: [
-    'Shift cipher: move each letter back in the alphabet. D → C → B → A.',
-    'Binary places are worth 8, 4, 2, 1. Add the places that have a 1: 101 = 4 + 1 = 5.',
-    'Data types: numbers you do maths with, text for names and phone numbers, Yes/No for true or false.',
+    'Code words: move each letter back. D → C, B → A.',
+    'Bulbs: each bulb has a value. Light the ones that add up to the target.',
+    'Phone numbers are text. Prices are numbers. Fees paid? is Yes/No.',
   ]},
   { id: 'forge',   name: 'Forge of Logic',    domain: 'Programming',   accent: '#ff8a3d', guide: [
-    'Run the code in your head one line at a time. Keep track of each value as it changes.',
-    '“Repeat 3 times” means do the indented line 3 times, in order.',
-    'IF … ELSE: only one of the two branches runs. Check the condition carefully (> is not ≥).',
+    'Robot coder: add arrow moves, then press Run. Avoid the 🧱 walls!',
+    'Repeat 3 times = do it 3 times. Track the number as it changes.',
+    'IF … ELSE: only one side happens.',
   ]},
   { id: 'shields', name: 'Gate of Shields',   domain: 'Cybersecurity', accent: '#3ddc84', guide: [
-    'Nobody genuine ever asks for your OTP, PIN or CVV. Not the bank, not the police, not a delivery agent.',
-    'Urgency + a strange link + a prize or a small fee = scam.',
-    'Long, unique passwords beat short clever ones. Check website names letter by letter.',
+    'Nobody real asks for your OTP, PIN or CVV.',
+    'Prize + hurry + strange link = scam.',
+    'Check website names letter by letter: amaz0n is not amazon.',
   ]},
   { id: 'heart',   name: 'Heart of the Cave', domain: 'AI',            accent: '#c27bff', guide: [
-    'AI learns patterns from lots of examples. Bad or one-sided examples make bad AI.',
-    'Good prompts say what you want, for whom, and in what format.',
-    'AI can be confidently wrong. Always check important facts with a trusted source.',
+    'AI learns from lots of examples.',
+    'Good prompts are specific: what, for whom, what style.',
+    'AI can be wrong. Check important facts.',
   ]},
 ];
 
 export const BOSS_GUIDE = [
-  'The Summarizer has 100 HP and asks questions from all four zones.',
-  'Before each question, pick Easy (20 damage), Medium (30) or Hard (50).',
-  'A wrong answer adds +10 sec and deals no damage. Hard ends the fight fastest if you are sure.',
+  'The Summarizer has 100 HP.',
+  'Pick Easy (20), Medium (30) or Hard (50) damage for each question.',
+  'Wrong = +10 sec and no damage.',
 ];
 export const BONUS_GUIDE = [
-  'Each zone ends with a bonus chest. Answer right and 20 seconds come OFF your time.',
-  'A wrong answer costs nothing. You can also skip it.',
-  'Bonuses decide close races, so they are worth a try!',
+  'Bonus chest! Get it right: 20 seconds OFF your time and ⭐⭐.',
+  'Wrong costs nothing. You can also skip it.',
 ];
 
 // Letters dropped by the 24 monsters (one each); bonus chests drop none
 export const RUNE_WORD = 'TECHQUESTCAVERNOFCODEBCA';
 export const BONUS_SEC = 20;
 
+// Activities (type: bits | order | type | robot | sort) are hands-on; plain items are quick quiz questions.
 export const ENEMIES = [
   // ---- Zone 1: Crypt of Cipher ----
   { zone: 'crypt', name: 'Bone Clerk', sprite: 'skeleton', difficulty: 'easy', variants: [
-    { prompt: 'Shift each letter BACK by 3 to decode:  F D W', choices: ['CAT', 'DOG', 'BAT', 'COW'], answer: 'CAT', explain: 'F→C, D→A, W→T' },
-    { prompt: 'Shift each letter BACK by 3 to decode:  G R J', choices: ['DOG', 'FOX', 'PIG', 'HEN'], answer: 'DOG', explain: 'G→D, R→O, J→G' },
-    { prompt: 'Shift each letter BACK by 1 to decode:  C P Y', choices: ['BOX', 'TOY', 'COW', 'BAG'], answer: 'BOX', explain: 'C→B, P→O, Y→X' },
+    { type: 'type', alphabet: true, prompt: 'Move each letter back by 1:  D B U', answer: 'CAT', explain: 'D→C, B→A, U→T' },
+    { type: 'type', alphabet: true, prompt: 'Move each letter back by 1:  E P H', answer: 'DOG', explain: 'E→D, P→O, H→G' },
+    { type: 'type', alphabet: true, prompt: 'Move each letter back by 1:  C P Y', answer: 'BOX', explain: 'C→B, P→O, Y→X' },
   ]},
   { zone: 'crypt', name: 'Bit Bat', sprite: 'bat', difficulty: 'easy', variants: [
-    { prompt: 'In binary: 1 = 1, 10 = 2, 11 = 3, 100 = 4.\nWhat is 101?', choices: ['5', '6', '4', '101'], answer: '5', explain: '100 is 4, plus 1 = 5' },
-    { prompt: 'In binary: 1 = 1, 10 = 2, 11 = 3, 100 = 4.\nWhat is 110?', choices: ['6', '5', '7', '110'], answer: '6', explain: '100 is 4, plus 10 (2) = 6' },
-    { prompt: 'Each bulb is ON or OFF. How many different patterns can 3 bulbs make?', choices: ['8', '3', '6', '9'], answer: '8', explain: '2 × 2 × 2 = 8' },
+    { type: 'bits', prompt: 'Light bulbs that add up to 5', bits: [8, 4, 2, 1], target: 5, explain: '4 + 1 = 5. That is 0101 in binary!' },
+    { type: 'bits', prompt: 'Light bulbs that add up to 6', bits: [8, 4, 2, 1], target: 6, explain: '4 + 2 = 6. That is 0110 in binary!' },
+    { type: 'bits', prompt: 'Light bulbs that add up to 9', bits: [8, 4, 2, 1], target: 9, explain: '8 + 1 = 9. That is 1001 in binary!' },
   ]},
-  { zone: 'crypt', name: 'Data Wraith', sprite: 'ghost', difficulty: 'medium', variants: [
-    { prompt: 'Best way to store the PRICE of a pizza (₹249.50)?', choices: ['Decimal number', 'Text', 'Yes / No', 'Date'], answer: 'Decimal number', explain: 'Prices need decimals and maths' },
-    { prompt: 'Best way to store “Has the student paid the fees?”', choices: ['Yes / No', 'Decimal number', 'Text', 'Date'], answer: 'Yes / No', explain: 'Only two possible values: a Boolean' },
-    { prompt: 'Which should be stored as TEXT, even though it is made of digits?', choices: ['Mobile number', 'Age', 'Marks', 'Price'], answer: 'Mobile number', explain: 'You never add or multiply phone numbers' },
+  { zone: 'crypt', name: 'Data Wraith', sprite: 'ghost', difficulty: 'easy', variants: [
+    { type: 'shoot', prompt: 'Shoot what we save as TEXT!', good: ['Phone number', 'Your name', 'Email'], bad: ['Price', 'Age', 'Marks', 'Temperature'], explain: 'You never do maths with phone numbers or names' },
+    { type: 'shoot', prompt: 'Shoot what we save as NUMBERS!', good: ['Price', 'Marks', 'Age'], bad: ['Name', 'Email', 'Phone number', 'City'], explain: 'Numbers are things you add or compare' },
   ]},
   { zone: 'crypt', name: 'Byte Spider', sprite: 'bat', palette: 'heart', difficulty: 'medium', variants: [
-    { prompt: 'Which one can store the MOST data?', choices: ['1 TB', '1 GB', '1 MB', '1 KB'], answer: '1 TB', explain: 'KB < MB < GB < TB, each about 1000× bigger' },
-    { prompt: 'Which is the SMALLEST unit of data?', choices: ['Bit', 'Byte', 'Kilobyte', 'Megabyte'], answer: 'Bit', explain: 'A bit is a single 0 or 1; 8 bits make a byte' },
+    { type: 'order', prompt: 'Smallest file to biggest 📦', items: ['A text message', 'A photo', 'A song', 'A full movie'], explain: 'Video takes the most space' },
+    { type: 'order', prompt: 'Smallest to biggest storage 📦', items: ['KB', 'MB', 'GB', 'TB'], explain: 'Kilo < Mega < Giga < Tera' },
   ]},
   { zone: 'crypt', name: 'Number Ghoul', sprite: 'ghost', difficulty: 'medium', variants: [
-    { prompt: 'A = 1, B = 2, C = 3 … Z = 26.\nWhat does 3 - 1 - 20 spell?', choices: ['CAT', 'BAT', 'CAR', 'COT'], answer: 'CAT', explain: '3 = C, 1 = A, 20 = T' },
-    { prompt: 'A = 1, B = 2, C = 3 … Z = 26.\nWhat does 2 - 1 - 7 spell?', choices: ['BAG', 'BIG', 'BAD', 'BEG'], answer: 'BAG', explain: '2 = B, 1 = A, 7 = G' },
+    { prompt: 'A=1, B=2, C=3 …  3 · 1 · 20 = ?', choices: ['CAT', 'BAT', 'CAR', 'COT'], answer: 'CAT', explain: '3=C, 1=A, 20=T' },
+    { prompt: 'A=1, B=2, C=3 …  2 · 1 · 7 = ?', choices: ['BAG', 'BIG', 'BAD', 'BEG'], answer: 'BAG', explain: '2=B, 1=A, 7=G' },
   ]},
   { zone: 'crypt', name: 'Cipher Lich', sprite: 'skeleton', palette: 'heart', difficulty: 'hard', guardian: true, variants: [
-    { prompt: 'In a secret code every letter is replaced by the NEXT letter (A → B).\nThe code word is  I B Q Q Z.  What is the real word?', choices: ['HAPPY', 'HIPPO', 'JOLLY', 'HAPPEN'], answer: 'HAPPY', explain: 'Move each letter back by one' },
-    { prompt: 'In a secret code every letter is replaced by the NEXT letter (A → B).\nThe code word is  D P E F.  What is the real word?', choices: ['CODE', 'COPE', 'DOPE', 'CAFE'], answer: 'CODE', explain: 'D→C, P→O, E→D, F→E' },
+    { type: 'bits', prompt: 'Five bulbs now! Make 21', bits: [16, 8, 4, 2, 1], target: 21, explain: '16 + 4 + 1 = 21 → 10101' },
+    { type: 'bits', prompt: 'Five bulbs now! Make 26', bits: [16, 8, 4, 2, 1], target: 26, explain: '16 + 8 + 2 = 26 → 11010' },
   ]},
   { zone: 'crypt', name: 'Crypt Chest', sprite: 'chestBody', bonus: true, difficulty: 'hard', variants: [
-    { prompt: 'Binary places are 8, 4, 2, 1.\nWhat is 1111 in normal numbers?', choices: ['15', '1111', '16', '4'], answer: '15', explain: '8 + 4 + 2 + 1 = 15' },
-    { prompt: 'A 2 GB movie is cut into 500 MB parts. How many parts? (1 GB = 1000 MB)', choices: ['4', '2', '5', '40'], answer: '4', explain: '2000 MB ÷ 500 MB = 4' },
+    { type: 'type', alphabet: true, prompt: 'Move each letter back by 2:  E Q F G', answer: 'CODE', explain: 'E→C, Q→O, F→D, G→E' },
+    { type: 'type', alphabet: true, prompt: 'Move each letter back by 1:  H B N F', answer: 'GAME', explain: 'H→G, B→A, N→M, F→E' },
   ]},
+
   // ---- Zone 2: Forge of Logic ----
   { zone: 'forge', name: 'Loop Slime', sprite: 'magma', difficulty: 'easy', variants: [
-    { prompt: 'x = 2\nRepeat 3 times:  x = x + 2\nWhat is x now?', choices: ['8', '6', '10', '5'], answer: '8', explain: '2 → 4 → 6 → 8' },
-    { prompt: 'x = 10\nRepeat 2 times:  x = x − 3\nWhat is x now?', choices: ['4', '7', '1', '13'], answer: '4', explain: '10 → 7 → 4' },
-    { prompt: 'score = 1\nRepeat 3 times:  score = score × 2\nWhat is score now?', choices: ['8', '6', '4', '9'], answer: '8', explain: '1 → 2 → 4 → 8' },
+    { type: 'drive', prompt: 'Race through the maths gates!', gates: [
+      { q: 'x = 2, add 2 three times', lanes: ['6', '8', '10'], answer: '8' },
+      { q: '5, doubled', lanes: ['10', '7', '25'], answer: '10' },
+      { q: '10 − 3 − 3', lanes: ['4', '7', '1'], answer: '4' },
+    ], explain: 'Loops repeat the same step' },
+    { type: 'drive', prompt: 'Race through the maths gates!', gates: [
+      { q: 'x = 1, double it 3 times', lanes: ['6', '8', '3'], answer: '8' },
+      { q: '3 + 3 + 3', lanes: ['9', '6', '33'], answer: '9' },
+      { q: '20, halve it twice', lanes: ['10', '5', '2'], answer: '5' },
+    ], explain: 'Loops repeat the same step' },
   ]},
-  { zone: 'forge', name: 'Order Golem', sprite: 'golem', difficulty: 'medium', variants: [
-    { prompt: 'Right order to make Maggi?\n1) Add masala  2) Boil water  3) Add noodles  4) Serve', choices: ['2 → 3 → 1 → 4', '1 → 2 → 3 → 4', '3 → 2 → 1 → 4', '2 → 1 → 4 → 3'], answer: '2 → 3 → 1 → 4', explain: 'An algorithm is just steps in the right order' },
-    { prompt: 'Right order to pay with UPI?\n1) Enter PIN  2) Open app  3) Enter amount  4) Scan QR', choices: ['2 → 4 → 3 → 1', '4 → 2 → 1 → 3', '2 → 3 → 4 → 1', '1 → 2 → 4 → 3'], answer: '2 → 4 → 3 → 1', explain: 'Open, scan, amount, then PIN last' },
+  { zone: 'forge', name: 'Order Golem', sprite: 'golem', difficulty: 'easy', variants: [
+    { type: 'order', prompt: 'Make Maggi 🍜', items: ['Boil water', 'Add noodles', 'Add masala', 'Serve'], explain: 'An algorithm is steps in the right order' },
+    { type: 'order', prompt: 'Pay with UPI 📱', items: ['Open the app', 'Scan the QR', 'Type the amount', 'Enter PIN'], explain: 'PIN always comes last' },
   ]},
-  { zone: 'forge', name: 'Bug Beetle', sprite: 'skeleton', palette: 'forge', difficulty: 'hard', variants: [
-    { prompt: 'Goal: PASS if marks are 35 or more.\nIF marks > 35 THEN print "PASS"\nWho gets treated WRONG?', choices: ['A student with exactly 35', 'A student with 34', 'A student with 90', 'Nobody'], answer: 'A student with exactly 35', explain: '> should be ≥ ; 35 is left out' },
-    { prompt: 'Meant to print 1 to 5:\ni = 1\nWHILE i < 5:  print i,  i = i + 1\nWhat does it actually print?', choices: ['1 2 3 4', '1 2 3 4 5', '0 1 2 3 4', 'Runs forever'], answer: '1 2 3 4', explain: 'It stops when i reaches 5, so 5 is never printed' },
+  { zone: 'forge', name: 'Rookie Bot', sprite: 'robot', palette: 'forge', difficulty: 'medium', variants: [
+    { type: 'robot', prompt: 'Get the robot to the ⭐', size: 4, start: [0, 3], goal: [3, 0], walls: [[1, 2], [2, 1], [1, 0]], max: 8, explain: 'Programs are just steps a computer follows' },
+    { type: 'robot', prompt: 'Get the robot to the ⭐', size: 4, start: [0, 0], goal: [3, 3], walls: [[1, 0], [1, 1], [3, 1], [2, 3]], max: 8, explain: 'Programs are just steps a computer follows' },
   ]},
   { zone: 'forge', name: 'Branch Goblin', sprite: 'magma', palette: 'shields', difficulty: 'medium', variants: [
-    { prompt: 'IF it is raining THEN take an umbrella\nELSE wear a cap.\nToday it is sunny. You…', choices: ['Wear a cap', 'Take an umbrella', 'Do both', 'Stay home'], answer: 'Wear a cap', explain: 'The condition is false, so the ELSE branch runs' },
-    { prompt: 'IF marks ≥ 90 THEN grade = "A"\nELSE grade = "B".\nMarks = 89. Grade?', choices: ['B', 'A', 'A and B', 'Nothing'], answer: 'B', explain: '89 is not ≥ 90, so ELSE runs' },
+    { prompt: 'IF raining → umbrella. ELSE → cap. It is sunny 😎', choices: ['Cap', 'Umbrella', 'Both', 'Nothing'], answer: 'Cap', explain: 'Not raining, so ELSE happens' },
+    { prompt: 'IF marks ≥ 90 → "A". ELSE → "B". Marks = 89', choices: ['B', 'A', 'A and B', 'None'], answer: 'B', explain: '89 is less than 90' },
   ]},
-  { zone: 'forge', name: 'Loop Wyrm', sprite: 'golem', palette: 'forge', difficulty: 'medium', variants: [
-    { prompt: 'total = 0\nFor each n in [2, 3, 5]:  total = total + n\ntotal = ?', choices: ['10', '5', '30', '235'], answer: '10', explain: '0 + 2 + 3 + 5 = 10' },
-    { prompt: 'For i = 1 to 4:  print i × i\nWhat is the LAST number printed?', choices: ['16', '4', '8', '10'], answer: '16', explain: 'Prints 1, 4, 9, 16' },
+  { zone: 'forge', name: 'Maze Wyrm', sprite: 'golem', palette: 'forge', difficulty: 'medium', variants: [
+    { type: 'robot', prompt: 'Bigger maze! Reach the ⭐', size: 5, start: [2, 4], goal: [2, 0], walls: [[1, 2], [2, 2], [3, 2], [0, 1]], max: 10, explain: 'Plan the path before you press Run' },
+    { type: 'robot', prompt: 'Bigger maze! Reach the ⭐', size: 5, start: [0, 4], goal: [4, 4], walls: [[1, 4], [1, 3], [3, 4], [3, 3], [3, 1]], max: 10, explain: 'Plan the path before you press Run' },
   ]},
   { zone: 'forge', name: 'Forge Titan', sprite: 'golem', palette: 'forge', difficulty: 'hard', guardian: true, variants: [
-    { prompt: 'a = 5, b = 3\na = a + b\nb = a − b\na = a − b\nWhat are a and b now?', choices: ['a = 3, b = 5', 'a = 5, b = 3', 'a = 8, b = 5', 'a = 8, b = 3'], answer: 'a = 3, b = 5', explain: 'a=8, b=5, a=3: the values swapped!' },
-    { prompt: 'count = 0\nRepeat 3 times:\n    Repeat 2 times:  count = count + 1\ncount = ?', choices: ['6', '5', '3', '2'], answer: '6', explain: 'The inner line runs 3 × 2 = 6 times' },
+    { prompt: 'IF age ≥ 18 → "Can vote". ELSE → "Too young". Riya is 17. Output?', choices: ['Too young', 'Can vote', 'Both', 'Nothing'], answer: 'Too young', explain: '17 is less than 18' },
+    { prompt: 'x = 3. Repeat 2 times: double x. x = ?', choices: ['12', '6', '9', '5'], answer: '12', explain: '3 → 6 → 12' },
   ]},
   { zone: 'forge', name: 'Forge Chest', sprite: 'chestBody', bonus: true, difficulty: 'hard', variants: [
-    { prompt: 'Robot: Forward 2, Turn right, Forward 2, Turn right, Forward 2, Turn right, Forward 2.\nWhat shape did it draw?', choices: ['Square', 'Triangle', 'Circle', 'Straight line'], answer: 'Square', explain: 'Four equal sides with right-angle turns' },
-    { prompt: 'Which step is missing?\n1) Go to ATM  2) Insert card  3) ______  4) Take cash', choices: ['Enter PIN and amount', 'Take card out', 'Go home', 'Print receipt'], answer: 'Enter PIN and amount', explain: 'Algorithms break if a step is missing' },
+    { type: 'robot', prompt: 'Master maze! Reach the ⭐', size: 5, start: [0, 0], goal: [4, 4], walls: [[1, 0], [1, 1], [1, 2], [3, 4], [3, 3], [3, 2], [2, 4]], max: 12, explain: 'Great coding!' },
+    { type: 'robot', prompt: 'Master maze! Reach the ⭐', size: 5, start: [4, 0], goal: [0, 4], walls: [[3, 0], [3, 1], [1, 1], [1, 2], [1, 3], [3, 3], [2, 4]], max: 12, explain: 'Great coding!' },
   ]},
+
   // ---- Zone 3: Gate of Shields ----
-  { zone: 'shields', name: 'OTP Imp', sprite: 'bat', palette: 'shields', difficulty: 'easy', variants: [
-    { prompt: 'A caller says: “I am from your bank. Tell me the OTP or your card gets blocked.” You…', choices: ['Hang up and call the bank’s official number', 'Share the OTP quickly', 'Share only half the OTP', 'Ask them to SMS you first'], answer: 'Hang up and call the bank’s official number', explain: 'Banks NEVER ask for your OTP' },
-    { prompt: 'A stranger on Instagram offers ₹5,000 if you send your Aadhaar photo and an OTP. You…', choices: ['Block and report the account', 'Send it, ₹5,000 is a lot', 'Send only the Aadhaar', 'Ask for ₹10,000'], answer: 'Block and report the account', explain: 'Easy money + OTP = scam' },
-  ]},
-  { zone: 'shields', name: 'Lock Knight', sprite: 'golem', palette: 'shields', difficulty: 'medium', variants: [
-    { prompt: 'Which password is the STRONGEST?', choices: ['Tiger!Mango#River92', 'password123', 'Rahul2007', '12345678'], answer: 'Tiger!Mango#River92', explain: 'Long + mixed symbols + not personal' },
-    { prompt: 'Safest Wi-Fi for online banking?', choices: ['Your home Wi-Fi with a password', 'Free airport Wi-Fi', 'An open café Wi-Fi', '“Free_WiFi_5G” from nowhere'], answer: 'Your home Wi-Fi with a password', explain: 'Open networks can be snooped' },
-  ]},
-  { zone: 'shields', name: 'Phish Phantom', sprite: 'ghost', palette: 'shields', difficulty: 'hard', variants: [
-    { prompt: 'Which message is MOST likely a scam?', choices: ['“Parcel held! Pay ₹25 at bit.ly/indpost-fee in 2 hrs”', '“Your Swiggy order is out for delivery”', '“Your electricity bill is ₹840. Pay in the official app”', '“Your class starts at 9 AM tomorrow”'], answer: '“Parcel held! Pay ₹25 at bit.ly/indpost-fee in 2 hrs”', explain: 'Urgency + short link + small fee = classic scam' },
-    { prompt: 'Which website link is FAKE?', choices: ['sbi-kyc-update.xyz', 'onlinesbi.sbi', 'www.irctc.co.in', 'www.india.gov.in'], answer: 'sbi-kyc-update.xyz', explain: 'Banks don’t use random .xyz “update” sites' },
+  { zone: 'shields', name: 'OTP Imp', sprite: 'bat', palette: 'shields', difficulty: 'easy', labels: ['Safe', 'Scam'], variants: [
+    { type: 'sort', prompt: 'Safe or scam?', labels: ['Safe', 'Scam'], items: [['Caller wants your OTP', 'Scam'], ['Mom sends a selfie', 'Safe'], ['"You won an iPhone! Click now"', 'Scam'], ['Teacher shares the timetable', 'Safe']], explain: 'Prizes and OTP requests are red flags' },
+    { type: 'sort', prompt: 'Safe or scam?', labels: ['Safe', 'Scam'], items: [['"Pay ₹25 or parcel is lost"', 'Scam'], ['Swiggy: order is on the way', 'Safe'], ['Stranger: "send your Aadhaar"', 'Scam'], ['Friend: "see you at 5"', 'Safe']], explain: 'Hurry + money + stranger = scam' },
   ]},
   { zone: 'shields', name: 'Prize Mimic', sprite: 'ghost', palette: 'forge', difficulty: 'easy', variants: [
-    { prompt: 'WhatsApp message: “You WON an iPhone 15! Click here to claim in 10 minutes.” You…', choices: ['Ignore and delete it', 'Click fast before time runs out', 'Forward it to friends', 'Reply with your address'], answer: 'Ignore and delete it', explain: 'Prize + urgency + link = scam' },
-    { prompt: 'A stranger with no photo and 0 friends sends you a friend request. Best move?', choices: ['Ignore it', 'Accept and share your number', 'Accept and send photos', 'Ask for their password'], answer: 'Ignore it', explain: 'Fake accounts are used for scams' },
+    { type: 'shoot', prompt: 'Shoot the SCAM messages! 🚨', good: ['Win an iPhone now!', 'Share your OTP', 'Pay ₹25 or lose parcel', 'KYC expired, click here'], bad: ['Class at 9 AM', 'Happy birthday!', 'Order delivered', 'See you at 5'], explain: 'Prizes, OTPs and hurry = scam' },
+    { type: 'shoot', prompt: 'Shoot the SCAM messages! 🚨', good: ['Free recharge, click!', 'Send Aadhaar photo', 'Your SIM blocks today', 'Lottery: pay ₹99'], bad: ['Mom: lunch is ready', 'Exam on Monday', 'Swiggy is on the way', 'Good morning!'], explain: 'Prizes, OTPs and hurry = scam' },
+  ]},
+  { zone: 'shields', name: 'Lock Knight', sprite: 'golem', palette: 'shields', difficulty: 'medium', variants: [
+    { type: 'order', prompt: 'Weakest to strongest password 🔒', items: ['1234', 'rahul2007', 'Rahul@2007', 'Tiger!Mango#River92'], explain: 'Longer + mixed = stronger' },
+    { type: 'order', prompt: 'Weakest to strongest password 🔒', items: ['abc', 'abc123', 'Abc@123', 'purple-tiger-eats-42-mangoes'], explain: 'Long passphrases are the strongest' },
   ]},
   { zone: 'shields', name: 'Patch Warden', sprite: 'robot', palette: 'shields', difficulty: 'medium', variants: [
-    { prompt: 'Your phone asks to install a security update. Updates usually…', choices: ['Fix security holes', 'Steal your data', 'Delete your photos', 'Make the phone slower forever'], answer: 'Fix security holes', explain: 'Updates patch weaknesses hackers use' },
-    { prompt: 'Safest way to remember many different passwords?', choices: ['A password manager app', 'A sticky note on the screen', 'Same password everywhere', 'Your name + 123'], answer: 'A password manager app', explain: 'It stores strong unique passwords securely' },
+    { type: 'shoot', prompt: 'Shoot only the STRONG passwords! 💪', good: ['T!ger#Mango92', 'purple-cat-eats-42-dosas', 'R@inyDay#2026'], bad: ['123456', 'password', 'rahul2007', 'qwerty'], explain: 'Long + mixed symbols = strong' },
+    { type: 'shoot', prompt: 'Shoot only the STRONG passwords! 💪', good: ['Bl#eSky!Rocket7', 'my-dog-loves-90-idlis', 'K@rnataka#Tq26'], bad: ['111111', 'iloveyou', 'abc123', 'priya2008'], explain: 'Long + mixed symbols = strong' },
+  ]},
+  { zone: 'shields', name: 'Phish Phantom', sprite: 'ghost', palette: 'shields', difficulty: 'hard', variants: [
+    { type: 'sort', prompt: 'Real website or fake?', labels: ['Real', 'Fake'], items: [['sbi.co.in', 'Real'], ['sbi-kyc-update.xyz', 'Fake'], ['amaz0n-offers.com', 'Fake'], ['irctc.co.in', 'Real']], explain: 'Look for odd endings and swapped letters' },
+    { type: 'sort', prompt: 'Real website or fake?', labels: ['Real', 'Fake'], items: [['india.gov.in', 'Real'], ['paytm-refund.top', 'Fake'], ['flipkart.com', 'Real'], ['g00gle-login.net', 'Fake']], explain: 'Look for odd endings and swapped letters' },
   ]},
   { zone: 'shields', name: 'Gatekeeper Wraith', sprite: 'ghost', palette: 'shields', difficulty: 'hard', guardian: true, variants: [
-    { prompt: 'Which UPI request is a SCAM sign?', choices: ['“Enter your PIN to RECEIVE ₹500”', '“Enter your PIN to PAY ₹500 at the shop”', '“Scan the shop’s QR code to pay”', '“Check the name before you pay”'], answer: '“Enter your PIN to RECEIVE ₹500”', explain: 'You never need a PIN to receive money' },
-    { prompt: 'A website asks for your Aadhaar, an OTP and your card CVV just to “verify your age”. This is…', choices: ['A scam (phishing)', 'Normal age check', 'A government rule', 'Safe if the site looks nice'], answer: 'A scam (phishing)', explain: 'No age check needs your OTP or CVV' },
+    { prompt: 'Which UPI request is a scam?', choices: ['"Enter PIN to RECEIVE ₹500"', '"Enter PIN to PAY the shop"', '"Scan the shop QR"', '"Check the name first"'], answer: '"Enter PIN to RECEIVE ₹500"', explain: 'You never need a PIN to receive money' },
+    { prompt: 'A site wants OTP + CVV to "check your age". It is…', choices: ['A scam', 'Normal', 'A government rule', 'Safe if it looks nice'], answer: 'A scam', explain: 'No age check needs your OTP' },
   ]},
   { zone: 'shields', name: 'Shield Chest', sprite: 'chestBody', bonus: true, difficulty: 'hard', variants: [
-    { prompt: 'Which password would take the LONGEST to crack?', choices: ['purple-tiger-eats-42-mangoes', 'P@ss1', 'qwerty', 'Admin123'], answer: 'purple-tiger-eats-42-mangoes', explain: 'Length matters most: long passphrases are very strong' },
-    { prompt: 'You used Gmail on a cyber café computer. Before leaving you should…', choices: ['Log out and close the browser', 'Just close the tab', 'Leave it open for the next person', 'Turn off the monitor'], answer: 'Log out and close the browser', explain: 'Otherwise the next person is inside your account' },
+    { type: 'type', prompt: 'Unscramble the danger word:  S U R I V', answer: 'VIRUS', explain: 'A virus is a harmful program' },
+    { type: 'type', prompt: 'Unscramble the danger word:  K A H C E R', answer: 'HACKER', explain: 'Strong passwords keep hackers out' },
   ]},
+
   // ---- Zone 4: Heart of the Cave ----
-  { zone: 'heart', name: 'Cog Sprite', sprite: 'robot', difficulty: 'easy', variants: [
-    { prompt: 'Which of these uses AI?', choices: ['Voice assistant (Alexa / Siri)', 'Pocket calculator', 'Light switch', 'Wall clock'], answer: 'Voice assistant (Alexa / Siri)', explain: 'It understands speech and learns patterns' },
-    { prompt: 'YouTube suggesting videos you might like is done by…', choices: ['An AI recommendation system', 'Pure luck', 'A person picking for you', 'Your phone’s battery'], answer: 'An AI recommendation system', explain: 'It learns from what you watch' },
+  { zone: 'heart', name: 'Map Sprite', sprite: 'bat', palette: 'heart', difficulty: 'easy', variants: [
+    { type: 'sort', prompt: 'Uses AI or not?', labels: ['Not AI', 'AI'], items: [['Face unlock', 'AI'], ['Calculator', 'Not AI'], ['YouTube suggestions', 'AI'], ['Light switch', 'Not AI']], explain: 'AI learns patterns from data' },
+    { type: 'sort', prompt: 'Uses AI or not?', labels: ['Not AI', 'AI'], items: [['Google Maps traffic', 'AI'], ['Wall clock', 'Not AI'], ['Instagram filters', 'AI'], ['Torch light', 'Not AI']], explain: 'AI learns patterns from data' },
+  ]},
+  { zone: 'heart', name: 'Data Hydra', sprite: 'magma', palette: 'heart', difficulty: 'easy', variants: [
+    { type: 'drive', prompt: 'Race through the AI gates!', gates: [
+      { q: 'Which one uses AI?', lanes: ['Calculator', 'Alexa', 'Torch'], answer: 'Alexa' },
+      { q: 'AI learns from…', lanes: ['Luck', 'Magic', 'Data'], answer: 'Data' },
+      { q: 'A deepfake is a…', lanes: ['Fake video', 'Deep pool', 'Big file'], answer: 'Fake video' },
+    ], explain: 'AI = patterns learned from data' },
+    { type: 'drive', prompt: 'Race through the AI gates!', gates: [
+      { q: 'Face unlock uses…', lanes: ['AI', 'A key', 'Bluetooth'], answer: 'AI' },
+      { q: 'Better prompt?', lanes: ['"poster"', '"neon fest poster"', '"nice"'], answer: '"neon fest poster"' },
+      { q: 'AI can be…', lanes: ['Never wrong', 'Wrong sometimes', 'Alive'], answer: 'Wrong sometimes' },
+    ], explain: 'AI = patterns learned from data' },
   ]},
   { zone: 'heart', name: 'Prompt Golem', sprite: 'golem', palette: 'heart', difficulty: 'medium', variants: [
-    { prompt: 'You want an AI to design a fest poster. Which prompt works BEST?', choices: ['“Bright neon-blue poster for a college tech fest with a robot and the title TECH QUEST”', '“poster”', '“make something nice”', '“tech”'], answer: '“Bright neon-blue poster for a college tech fest with a robot and the title TECH QUEST”', explain: 'Specific prompts give specific results' },
-    { prompt: 'Best prompt to understand a long chapter quickly?', choices: ['“Summarise this chapter in 5 simple bullet points for a PU student”', '“chapter”', '“tell me everything”', '“do my homework”'], answer: '“Summarise this chapter in 5 simple bullet points for a PU student”', explain: 'Say the format, the length and the audience' },
+    { prompt: 'Best prompt for a fest poster? 🎨', choices: ['"Neon poster, robot, title TECH QUEST"', '"poster"', '"something nice"', '"tech"'], answer: '"Neon poster, robot, title TECH QUEST"', explain: 'Specific prompts give better results' },
+    { prompt: 'Best prompt to study a chapter? 📚', choices: ['"Summarise in 5 simple points"', '"chapter"', '"tell me everything"', '"do my homework"'], answer: '"Summarise in 5 simple points"', explain: 'Say the format and the length' },
   ]},
-  { zone: 'heart', name: 'Mirage Mind', sprite: 'robot', palette: 'heart', difficulty: 'hard', variants: [
-    { prompt: 'Which clue most often gives away an AI-made photo of a person?', choices: ['Extra or melted-looking fingers', 'Good lighting', 'A smiling face', 'A blue sky'], answer: 'Extra or melted-looking fingers', explain: 'Hands, text and ears often look odd in AI images' },
-    { prompt: 'An AI chatbot confidently tells you a “fact”. What should you do?', choices: ['Check it with a trusted source', 'Trust it, AI is never wrong', 'Forward it to everyone', 'Ask it to say it louder'], answer: 'Check it with a trusted source', explain: 'AI can “hallucinate”: make things up confidently' },
+  { zone: 'heart', name: 'Mirage Mind', sprite: 'robot', palette: 'heart', difficulty: 'medium', variants: [
+    { type: 'sort', prompt: 'Is it a sign of an AI-made photo?', labels: ['Normal', 'AI sign'], items: [['Six fingers on a hand', 'AI sign'], ['Natural shadows', 'Normal'], ['Melted, unreadable text', 'AI sign'], ['Clear faces of real friends', 'Normal']], explain: 'Hands and text often look odd in AI images' },
+    { type: 'sort', prompt: 'Is it a sign of an AI-made photo?', labels: ['Normal', 'AI sign'], items: [['Earrings that do not match', 'AI sign'], ['A real place you know', 'Normal'], ['Too-smooth plastic skin', 'AI sign'], ['Normal blurry background', 'Normal']], explain: 'Look closely at small details' },
   ]},
-  { zone: 'heart', name: 'Map Sprite', sprite: 'bat', palette: 'heart', difficulty: 'easy', variants: [
-    { prompt: 'Google Maps predicting a traffic jam ahead is done using…', choices: ['AI learning from lots of trip data', 'A person watching every road', 'Pure guessing', 'The weather report'], answer: 'AI learning from lots of trip data', explain: 'It spots patterns in millions of journeys' },
-    { prompt: 'Unlocking your phone with your face is an example of…', choices: ['AI face recognition', 'A calculator', 'A password', 'Bluetooth'], answer: 'AI face recognition', explain: 'The phone learned what your face looks like' },
-  ]},
-  { zone: 'heart', name: 'Data Hydra', sprite: 'magma', palette: 'heart', difficulty: 'medium', variants: [
-    { prompt: 'To teach an AI to recognise mangoes, you mostly need…', choices: ['Many labelled photos of mangoes', 'One very clear mango photo', 'A mango-shaped computer', 'A faster internet connection'], answer: 'Many labelled photos of mangoes', explain: 'AI learns from lots of examples' },
-    { prompt: 'Which task is AI BEST at today?', choices: ['Sorting thousands of photos quickly', 'Deciding what is fair', 'Comforting a sad friend', 'Knowing how you feel inside'], answer: 'Sorting thousands of photos quickly', explain: 'Fast pattern-matching is AI’s strength' },
+  { zone: 'heart', name: 'Train Bot', sprite: 'robot', palette: 'heart', difficulty: 'medium', variants: [
+    { type: 'order', prompt: 'Teach an AI to spot cats 🐱', items: ['Collect cat photos', 'Tell it which are cats', 'Let it practise', 'Test it on new photos'], explain: 'AI learns from examples, then gets tested' },
+    { type: 'order', prompt: 'How a chatbot answers 💬', items: ['You type a question', 'AI reads it', 'It predicts words', 'Answer appears'], explain: 'Chatbots predict the next words' },
   ]},
   { zone: 'heart', name: 'Deepfake Djinn', sprite: 'robot', palette: 'heart', difficulty: 'hard', guardian: true, variants: [
-    { prompt: 'An AI hiring tool trained on old data rejects most women. This problem is called…', choices: ['Bias in AI', 'A virus', 'Slow internet', 'A hardware fault'], answer: 'Bias in AI', explain: 'Unfair data makes unfair AI' },
-    { prompt: 'A “deepfake” is…', choices: ['A fake video or voice made by AI to look real', 'A very deep swimming pool', 'A broken file', 'A strong password'], answer: 'A fake video or voice made by AI to look real', explain: 'Always check the source of shocking videos' },
+    { prompt: 'A chatbot tells you a "fact" that sounds wrong. You…', choices: ['Check a trusted source', 'Believe it', 'Share it everywhere', 'Argue with it'], answer: 'Check a trusted source', explain: 'AI can be confidently wrong' },
+    { prompt: 'A "deepfake" is…', choices: ['A fake AI video or voice', 'A deep pool', 'A broken file', 'A strong password'], answer: 'A fake AI video or voice', explain: 'Check the source of shocking videos' },
   ]},
   { zone: 'heart', name: 'Heart Chest', sprite: 'chestBody', bonus: true, difficulty: 'hard', variants: [
-    { prompt: 'Chatbots like ChatGPT write answers by predicting the next…', choices: ['Word (piece of text)', 'Picture', 'Website', 'Phone number'], answer: 'Word (piece of text)', explain: 'They predict text one small piece at a time' },
-    { prompt: 'Which one is NOT using AI?', choices: ['A calculator adding 2 + 2', 'A spam filter in Gmail', 'A voice assistant', 'Netflix recommendations'], answer: 'A calculator adding 2 + 2', explain: 'Fixed rules, no learning from data' },
+    { type: 'bits', prompt: 'Computers think in bits! Make 29', bits: [16, 8, 4, 2, 1], target: 29, explain: '16 + 8 + 4 + 1 = 29 → 11101' },
+    { type: 'bits', prompt: 'Computers think in bits! Make 18', bits: [16, 8, 4, 2, 1], target: 18, explain: '16 + 2 = 18 → 10010' },
   ]},
 ];
 
@@ -180,17 +197,17 @@ export const BOSS = {
       { prompt: 'n = 1\nRepeat 4 times:  n = n × 2\nn = ?', choices: ['16', '8', '32', '6'], answer: '16' },
       { prompt: '“Phishing” means…', choices: ['Fake messages that trick you into giving info', 'Catching fish online', 'A fast internet plan', 'A type of virus scan'], answer: 'Fake messages that trick you into giving info' },
       { prompt: 'Odd one out?', choices: ['MS Paint', 'Google Drive', 'Dropbox', 'OneDrive'], answer: 'MS Paint' },
-      { prompt: 'How many different 4-digit PINs (0000–9999) exist?', choices: ['10,000', '9,999', '1,000', '4,000'], answer: '10,000' },
+      { prompt: 'Which one is safest to post online?', choices: ['Your favourite movie', 'Your OTP', 'Your home address', 'Your ATM PIN'], answer: 'Your favourite movie' },
       { prompt: 'Two-factor authentication (2FA) adds…', choices: ['A second check, like an OTP', 'A second password field only', 'Faster login', 'A bigger font'], answer: 'A second check, like an OTP' },
       { prompt: 'An AI trained ONLY on cat photos is shown a dog. It will most likely…', choices: ['Call it a cat', 'Say “dog” correctly', 'Refuse to answer', 'Draw the dog'], answer: 'Call it a cat' },
     ],
     hard: [
       { prompt: 'Shift each letter BACK by 2:  E Q F G', choices: ['CODE', 'COPE', 'DOGE', 'CAFE'], answer: 'CODE' },
-      { prompt: 'Binary 1010 equals…', choices: ['10', '12', '5', '1010'], answer: '10' },
+      { prompt: 'Computers store everything using only…', choices: ['0 and 1', 'A to Z', '1 to 10', 'Colours'], answer: '0 and 1' },
       { prompt: 'IF age ≥ 18 AND has_licence THEN drive.\nRiya is 19 with no licence. Can she drive?', choices: ['No', 'Yes', 'Only on Sundays', 'Only with a friend'], answer: 'No' },
       { prompt: 'Email from “support@amaz0n-help.com”. The biggest red flag?', choices: ['A zero instead of the letter “o”', 'It says “support”', 'It has a .com', 'It is an email'], answer: 'A zero instead of the letter “o”' },
       { prompt: 'AI “hallucination” means…', choices: ['AI confidently gives made-up information', 'AI sees ghosts', 'AI is overheating', 'AI is sleeping'], answer: 'AI confidently gives made-up information' },
-      { prompt: 'Sort 9, 4, 7 by swapping two numbers at a time. Fewest swaps needed?', choices: ['2', '1', '3', '0'], answer: '2' },
+      { prompt: 'Which file is the biggest?', choices: ['A 2-hour movie', 'A photo', 'A text message', 'A song'], answer: 'A 2-hour movie' },
     ],
   },
 };

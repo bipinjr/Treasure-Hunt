@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gatekeeper · Cavern of Code</title>
   <link rel="preload" href="fonts/pressstart-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="fonts/pixelify-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗝️</text></svg>">
 </head>
@@ -35,16 +35,15 @@
     </div>
 
     <div class="panel admin-card">
-      <h3>Round</h3>
+      <h3>Event: always open, each player gets their own timer when they start</h3>
       <div class="row">
         <span class="status-pill" id="status">–</span>
         <span style="font-family:var(--display);font-size:28px;color:var(--gold)" id="clock">--:--</span>
       </div>
       <div class="row">
-        <label for="mins" style="color:var(--muted)">Minutes</label>
+        <label for="mins" style="color:var(--muted)">Minutes per player</label>
         <input class="field" id="mins" type="number" min="1" max="120" value="20" style="max-width:110px;flex:none">
-        <button class="btn" id="start">▶ Start round</button>
-        <button class="btn ghost" id="end">■ End now</button>
+        <button class="btn" id="start">Save time limit</button>
         <button class="btn danger" id="reset">⟲ Reset all</button>
       </div>
       <p class="msg" id="msg" role="status"></p>
@@ -85,7 +84,7 @@
       </div>
       <div class="table-scroll">
         <table class="admin-table">
-          <thead><tr><th>#</th><th>Status</th><th>Player</th><th>Where</th><th>Progress</th><th>Right</th><th>Wrong</th><th>Bonus</th><th>Penalty</th><th>Tab strikes</th><th>Time</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Status</th><th>Player</th><th>Where</th><th>Progress</th><th>Right</th><th>Wrong</th><th>Stars</th><th>Bonus</th><th>Penalty</th><th>Tab strikes</th><th>Time</th><th></th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
@@ -131,7 +130,7 @@
   <section id="report" class="report" aria-hidden="true"></section>
 
   <script type="module">
-    import { sb, syncClock, now, fmt, eventEnd, eventPhase, rank, esc, fetchEvent, fetchPlayers, progressPct, stageLabel, zoneLabel, TOTAL_STAGES } from './js/common.js';
+    import { sb, syncClock, now, fmt, playerEnd, eventPhase, revealOnScroll, rank, esc, fetchEvent, fetchPlayers, progressPct, stageLabel, zoneLabel, TOTAL_STAGES } from './js/common.js';
     const $ = id => document.getElementById(id);
     let pw = sessionStorage.getItem('tq_admin') || '';
     let ev = null, players = [];
@@ -149,6 +148,9 @@
       if (error) { $('login-msg').textContent = 'Wrong password. Try again.'; sessionStorage.removeItem('tq_admin'); return; }
       pw = p; sessionStorage.setItem('tq_admin', p);
       $('login-screen').hidden = true; $('panel').hidden = false;
+      // attach after unhiding: an observer started on a hidden panel never fires
+      document.querySelectorAll('#panel > .panel').forEach(el => el.classList.add('reveal'));
+      revealOnScroll($('panel'));
       await syncClock(); await refresh(); refreshFeedback();
       $('clue').value = ev?.clue || '';
     }
@@ -160,10 +162,8 @@
     const status = p => p.finished_at ? ['done', 'Finished'] : online(p) ? ['on', 'Online'] : ['off', 'Idle'];
     function liveMs(p) {
       if (p.finished_at) return p.total_ms;
-      if (!ev?.started_at || ev.status === 'waiting') return null;
-      const end = eventPhase(ev) === 'running' ? now() : Math.min(now(), eventEnd(ev));
-      const start = Math.max(new Date(p.created_at).getTime(), new Date(ev.started_at).getTime());
-      return Math.max(0, end - start + (p.penalty_sec - p.bonus_sec) * 1000);
+      const start = new Date(p.created_at).getTime();
+      return Math.max(0, Math.min(now(), playerEnd(p, ev)) - start + (p.penalty_sec - p.bonus_sec) * 1000);
     }
 
     function render() {
@@ -200,13 +200,14 @@
           <td>${zoneLabel(p)}</td>
           <td><div class="mini-bar"><i style="width:${progressPct(p)}%"></i></div><small>${p.finished_at ? 'done' : stageLabel(p)}</small></td>
           <td class="num">${p.correct}</td><td class="num">${p.wrong}</td>
-          <td class="num">${p.bonus_count ? `⭐${p.bonus_count} (−${p.bonus_sec}s)` : '–'}</td>
+          <td class="num stars-txt">⭐${p.stars}</td>
+          <td class="num">${p.bonus_count ? `${p.bonus_count} (−${p.bonus_sec}s)` : '–'}</td>
           <td class="num">${p.penalty_sec ? `+${p.penalty_sec}s` : '–'}</td>
           <td class="num ${p.tab_strikes >= 2 || p.restarts ? 'warn' : ''}">${p.tab_strikes}/3${p.restarts ? ` · ${p.restarts}× restarted` : ''}</td>
           <td class="num ${p.finished_at ? 'fin' : ''}">${t == null ? '–' : fmt(t)}</td>
           <td style="white-space:nowrap"><button class="adj" data-id="${p.id}" data-n="${esc(p.name)}">± Time</button>
             <button class="del" data-id="${p.id}" data-n="${esc(p.name)}">Remove</button></td></tr>`;
-      }).join('') : `<tr><td colspan="12" class="empty-row">${q ? 'No player matches that name.' : 'No players yet. Share the game link and ask everyone to enter their name.'}</td></tr>`;
+      }).join('') : `<tr><td colspan="13" class="empty-row">${q ? 'No player matches that name.' : 'No players yet. Share the game link and ask everyone to enter their name.'}</td></tr>`;
       $('rows').querySelectorAll('.sel').forEach(b => b.onclick = () => { selected = b.dataset.id; render(); $('scorecard').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
       [...$('rows').children].forEach(tr => tr.classList.toggle('picked', !!tr.querySelector(`.sel[data-id="${selected}"]`)));
       renderCard();
@@ -226,7 +227,7 @@
       const p = r.find(x => x.id === selected) || r[0];
       if (!p) { $('scorecard').innerHTML = '<p class="muted-small">Scorecards appear here once players join.</p>'; return; }
       const n = r.indexOf(p) + 1, [cls, label] = status(p), t = liveMs(p);
-      const start = ev?.started_at ? Math.max(new Date(p.created_at).getTime(), new Date(ev.started_at).getTime()) : null;
+      const start = new Date(p.created_at).getTime();
       const elapsed = t == null ? null : Math.max(0, t - (p.penalty_sec - p.bonus_sec) * 1000);
       const answered = p.correct + p.wrong;
       const zones = [['Crypt of Cipher', '#5b8def'], ['Forge of Logic', '#ff8a3d'], ['Gate of Shields', '#3ddc84'], ['Heart of the Cave', '#c27bff']];
@@ -250,6 +251,7 @@
         </div>
         <div class="sc-facts">
           <span>Accuracy <b>${answered ? Math.round(p.correct / answered * 100) : 0}%</b></span>
+          <span>Stars <b>⭐${p.stars}</b></span>
           <span>Right <b>${p.correct}</b></span>
           <span>Tab strikes <b class="${p.tab_strikes >= 2 ? 'warn' : ''}">${p.tab_strikes}/3</b></span>
           <span>Restarts <b class="${p.restarts ? 'warn' : ''}">${p.restarts}</b></span>
@@ -288,7 +290,7 @@
       return rank(players).map((p, i) => ({
         rank: i + 1, name: p.name, status: p.finished_at ? 'Finished' : 'Not finished', where: zoneLabel(p),
         checkpoints: `${Math.min(p.stage, TOTAL_STAGES)}/${TOTAL_STAGES}`, bossHp: p.boss_hp, correct: p.correct, wrong: p.wrong,
-        bonus: p.bonus_count, bonusSec: p.bonus_sec, penaltySec: p.penalty_sec, strikes: p.tab_strikes, restarts: p.restarts,
+        stars: p.stars, bonus: p.bonus_count, bonusSec: p.bonus_sec, penaltySec: p.penalty_sec, strikes: p.tab_strikes, restarts: p.restarts,
         time: liveMs(p) == null ? '' : fmt(liveMs(p)), totalMs: p.total_ms ?? '', joined: p.created_at, finished: p.finished_at ?? '',
       }));
     }
@@ -299,7 +301,7 @@
         const p = players.find(x => x.name === r.name), answered = (p?.correct || 0) + (p?.wrong || 0);
         return {
           'Rank': r.rank, 'Name': r.name, 'Status': r.status, 'Where': r.where, 'Checkpoints': r.checkpoints,
-          'Total time (mm:ss)': r.time, 'Correct': r.correct, 'Wrong': r.wrong, 'Accuracy %': answered ? Math.round(r.correct / answered * 100) : 0,
+          'Total time (mm:ss)': r.time, 'Stars': r.stars, 'Correct': r.correct, 'Wrong': r.wrong, 'Accuracy %': answered ? Math.round(r.correct / answered * 100) : 0,
           'Bonus chests': r.bonus, 'Bonus (sec off)': r.bonusSec, 'Penalty (sec added)': r.penaltySec, 'Boss HP left': r.bossHp,
           'Tab strikes': r.strikes, 'Restarts': r.restarts, 'Joined': when(r.joined), 'Finished': when(r.finished),
         };
@@ -327,10 +329,10 @@
         <p>Tech Quest · BCA Department · ${new Date().toLocaleString()}</p>
         <p>${rows.length} players · ${fin} finished · round ${eventPhase(ev)}</p>
         <table>
-          <thead><tr><th>Rank</th><th>Name</th><th>Status</th><th>Checkpoints</th><th>Right</th><th>Wrong</th><th>Bonus</th><th>Penalty</th><th>Strikes</th><th>Time</th></tr></thead>
-          <tbody>${rows.map(r => `<tr class="${r.rank <= 3 ? 'top' : ''}"><td>${r.rank}</td><td>${esc(r.name)}</td><td>${r.status}</td><td>${r.checkpoints}</td><td>${r.correct}</td><td>${r.wrong}</td><td>${r.bonus ? `${r.bonus} (−${r.bonusSec}s)` : '–'}</td><td>${r.penaltySec ? `+${r.penaltySec}s` : '–'}</td><td>${r.strikes}/3${r.restarts ? ` (${r.restarts}× restart)` : ''}</td><td>${r.time || '–'}</td></tr>`).join('')}</tbody>
+          <thead><tr><th>Rank</th><th>Name</th><th>Status</th><th>Checkpoints</th><th>Stars</th><th>Right</th><th>Wrong</th><th>Bonus</th><th>Penalty</th><th>Strikes</th><th>Time</th></tr></thead>
+          <tbody>${rows.map(r => `<tr class="${r.rank <= 3 ? 'top' : ''}"><td>${r.rank}</td><td>${esc(r.name)}</td><td>${r.status}</td><td>${r.checkpoints}</td><td>${r.stars}</td><td>${r.correct}</td><td>${r.wrong}</td><td>${r.bonus ? `${r.bonus} (−${r.bonusSec}s)` : '–'}</td><td>${r.penaltySec ? `+${r.penaltySec}s` : '–'}</td><td>${r.strikes}/3${r.restarts ? ` (${r.restarts}× restart)` : ''}</td><td>${r.time || '–'}</td></tr>`).join('')}</tbody>
         </table>
-        <p class="foot">Ranking: finished players by total time (time + penalties − bonuses; tie: fewer wrong, then earlier finish), then unfinished players by progress.</p>`;
+        <p class="foot">Ranking: finished players by total time (time + penalties − bonuses; tie: more stars, fewer wrong, then earlier finish), then unfinished players by progress.</p>`;
       const old = document.title;
       document.title = `cavern-of-code-results-${stamp()}`; // becomes the suggested PDF file name
       window.print();
@@ -376,19 +378,17 @@
     function tick() {
       if (!ev) return;
       const phase = eventPhase(ev);
-      $('status').textContent = phase.toUpperCase();
-      $('status').className = 'status-pill ' + phase;
-      $('clock').textContent = phase === 'running' ? fmt(eventEnd(ev) - now()) : phase === 'ended' ? '00:00' : fmt(ev.duration_sec * 1000);
+      $('status').textContent = phase === 'open' ? 'OPEN' : 'CLOSED';
+      $('status').className = 'status-pill ' + (phase === 'open' ? 'running' : 'ended');
+      $('clock').textContent = `${fmt(ev.duration_sec * 1000)} each`;
     }
 
     $('start').onclick = async () => {
       const m = Math.max(1, Math.min(120, parseInt($('mins').value, 10) || 20));
-      if (eventPhase(ev) === 'running' && !confirm('A round is running. Restart the clock from now?')) return;
-      if (await call('admin_start', { minutes: m })) { msg(`Round started: ${m} minute${m === 1 ? '' : 's'}. Good luck, adventurers!`); refresh(); }
+      if (await call('admin_start', { minutes: m })) { msg(`Saved: every new player gets ${m} minute${m === 1 ? '' : 's'} from the moment they join.`); refresh(); }
     };
-    $('end').onclick = async () => { if (confirm('End the round now for everyone?') && await call('admin_end')) { msg('Round ended.'); refresh(); } };
     $('reset').onclick = async () => {
-      if (confirm('Delete ALL players and scores and go back to waiting? Export the CSV or PDF first. This cannot be undone.') && await call('admin_reset')) { msg('Everything reset. Players will return to the name screen.'); refresh(); }
+      if (confirm('Delete ALL players and scores? Export the Excel or PDF first. This cannot be undone.') && await call('admin_reset')) { msg('Everything reset. The event stays open for new players.'); refresh(); }
     };
     $('save-clue').onclick = async () => { if (await call('admin_set_clue', { p_clue: $('clue').value.trim() })) msg('Clue saved.'); };
     $('setpw').onclick = async () => {

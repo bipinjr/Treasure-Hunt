@@ -29,24 +29,21 @@ export function fmt(ms) {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
 
-export function eventEnd(ev) {
-  return ev?.started_at ? new Date(ev.started_at).getTime() + ev.duration_sec * 1000 : null;
+// Every player has their own clock: it starts when they join and lasts duration_sec
+export function playerEnd(p, ev) {
+  return new Date(p.created_at).getTime() + (ev?.duration_sec || 1200) * 1000;
 }
 
-// running | waiting | ended (a running event past its end counts as ended)
-export function eventPhase(ev) {
-  if (!ev) return 'waiting';
-  if (ev.status === 'running' && now() >= eventEnd(ev)) return 'ended';
-  return ev.status;
-}
+// open | ended: the event is open unless the organiser closed it
+export const eventPhase = ev => ev?.status === 'ended' ? 'ended' : 'open';
 
 // Finished first by total time (tie: fewer wrong, then earlier finish), then unfinished by progress
 export function rank(players) {
   return [...players].sort((a, b) => {
     const fa = a.finished_at != null, fb = b.finished_at != null;
     if (fa !== fb) return fa ? -1 : 1;
-    if (fa) return a.total_ms - b.total_ms || a.wrong - b.wrong || new Date(a.finished_at) - new Date(b.finished_at);
-    return b.stage - a.stage || a.boss_hp - b.boss_hp || (a.penalty_sec - a.bonus_sec) - (b.penalty_sec - b.bonus_sec) || a.wrong - b.wrong;
+    if (fa) return a.total_ms - b.total_ms || b.stars - a.stars || a.wrong - b.wrong || new Date(a.finished_at) - new Date(b.finished_at);
+    return b.stage - a.stage || a.boss_hp - b.boss_hp || b.stars - a.stars || (a.penalty_sec - a.bonus_sec) - (b.penalty_sec - b.bonus_sec) || a.wrong - b.wrong;
   });
 }
 
@@ -64,6 +61,17 @@ export async function fetchEvent() {
 export async function fetchPlayers(cols = '*') {
   const { data } = await sb.from('players').select(cols);
   return data || [];
+}
+
+// Fade/slide elements with class "reveal" in as they scroll into view
+// A plain position check instead of IntersectionObserver: it can never leave content stuck invisible.
+export function revealOnScroll(root = document) {
+  const els = [...root.querySelectorAll('.reveal:not(.in)')];
+  els.forEach((el, i) => { el.style.transitionDelay = `${(i % 4) * 90}ms`; });
+  const check = () => els.forEach(el => { if (el.getBoundingClientRect().top < innerHeight * 0.92) el.classList.add('in'); });
+  document.addEventListener('scroll', check, { capture: true, passive: true });
+  addEventListener('resize', check);
+  setTimeout(check, 50);
 }
 
 // Re-render a keyed list and animate rows sliding to their new rank (FLIP)

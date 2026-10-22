@@ -1,7 +1,8 @@
-import { sb, syncClock, now, fmt, eventEnd, eventPhase, rank, progressPct, esc, fetchEvent, fetchPlayers, flipList, confetti, embers, stageLabel, TOTAL_STAGES } from './common.js';
+import { sb, syncClock, now, fmt, playerEnd, eventPhase, rank, progressPct, esc, fetchEvent, fetchPlayers, flipList, confetti, embers, stageLabel, revealOnScroll, TOTAL_STAGES } from './common.js';
 import { ZONES, ENEMIES, BOSS, RUNE_WORD, PRACTICE, BOSS_GUIDE, BONUS_GUIDE, BONUS_SEC } from './questions.js';
 import { spriteSVG } from './sprites.js';
 import { sfx } from './sfx.js';
+import { renderActivity, activityReveal, ACTIVITY_LABEL } from './activities.js';
 
 const $ = id => document.getElementById(id);
 const KEY = 'tq_player';
@@ -23,7 +24,7 @@ let bossIntroDone = false;
 let results = [];       // per-stage 'ok' | 'miss', kept locally for the rune bar
 let endTimer = null;
 // players' screens only need what ranking and the side board use; keeps traffic low with 120 PCs polling
-const BOARD_COLS = 'id,name,stage,boss_hp,finished_at,total_ms,wrong,penalty_sec,bonus_sec,bonus_count';
+const BOARD_COLS = 'id,name,stage,boss_hp,finished_at,total_ms,wrong,penalty_sec,bonus_sec,bonus_count,stars';
 let streak = 0;
 let practice = false;   // local-only warm-up run: no server, not on the leaderboard
 let pev = null;         // practice event clock
@@ -41,6 +42,8 @@ let guidesSeen = new Set();
 // ---------- boot ----------
 embers($('embers'));
 $('hero-art').innerHTML = spriteSVG('knight', null, 'k') + spriteSVG('boss', null, 'b');
+document.querySelectorAll('.zc-art').forEach(el => { el.innerHTML = spriteSVG(el.dataset.sprite, el.dataset.tint || null); });
+revealOnScroll();
 $('lobby-art').innerHTML = spriteSVG('skeleton') + spriteSVG('magma') + spriteSVG('ghost', 'shields') + spriteSVG('robot', 'heart');
 init();
 
@@ -98,10 +101,9 @@ function route() {
   if (practice) return;
   if (!me) { if (screen !== 'rules') { show('name'); setTimeout(() => $('name')?.focus(), 50); } return; }
   if (me.finished_at) { if (screen !== 'end') victory(); return; }
-  const phase = eventPhase(ev);
-  if (phase === 'waiting') { show('lobby'); renderLobby(); }
-  else if (phase === 'running') { if (screen !== 'game') startGame(); }
-  else if (screen !== 'end') timeUp();
+  // no waiting room: each player's run starts as soon as they join
+  if (eventPhase(ev) === 'ended' || now() >= playerEnd(me, ev)) { if (screen !== 'end') timeUp(); }
+  else if (screen !== 'game') startGame();
 }
 
 // ---------- join ----------
@@ -210,7 +212,7 @@ function spawn() {
       : `<div class="n">${e.guardian ? '👑 ' : ''}${esc(e.name)}</div><div class="d ${e.difficulty}">${e.guardian ? 'zone guardian' : e.difficulty}</div>`;
     void enemyEl.offsetWidth; enemyEl.classList.add('enter');
     const q = pick(e.variants);
-    const ask = () => { current = { q, choices: shuffle(q.choices), bonus: e.bonus }; renderQuestion(); };
+    const ask = () => { current = { q, choices: q.choices ? shuffle(q.choices) : null, bonus: e.bonus }; renderQuestion(); };
     if (newZone && !practice) guide(`${title} · ${z.domain}`, z.guide, `zone-${z.id}`).then(ask);
     else if (e.bonus) guide('Bonus chest', BONUS_GUIDE, 'bonus').then(ask);
     else ask();
@@ -256,23 +258,35 @@ function chooseDiff(diff) {
 
 function renderQuestion() {
   const { q, choices, diff } = current;
+  const act = !!q.type;
   $('qcard').innerHTML = `
-    <p class="prompt">${diff ? `<span class="d ${diff}">[${diff} · ${BOSS.damage[diff]} dmg]</span> ` : ''}${esc(q.prompt)}</p>
-    <div class="choices">${choices.map((c, i) => `<button class="choice" data-i="${i}"><span class="key">${i + 1}</span><span>${esc(c)}</span></button>`).join('')}</div>
+    <p class="prompt">${diff ? `<span class="d ${diff}">[${diff} · ${BOSS.damage[diff]} dmg]</span> ` : ''}${act ? `<span class="act-tag">${ACTIVITY_LABEL[q.type]}</span>` : ''}${esc(q.prompt)}</p>
+    ${act ? '<div class="activity" id="activity"></div>' : `<div class="choices">${choices.map((c, i) => `<button class="choice" data-i="${i}"><span class="key">${i + 1}</span><span>${esc(c)}</span></button>`).join('')}</div>`}
     <div class="q-foot"><p class="explain bad" id="explain">${!diff && !current.bonus && me.attempt ? 'Last try for this monster!' : ''}</p>${current.bonus ? '<button class="btn ghost skip" id="skip-bonus">Skip bonus (S)</button>' : ''}</div>`;
   replay($('qcard'), 'rise');
-  $('qcard').querySelectorAll('.choice').forEach(b => b.onclick = () => answer(+b.dataset.i));
-  if (current.bonus) $('skip-bonus').onclick = () => answer(-1);
+  if (act) renderActivity(q, $('activity'), activityDone);
+  else $('qcard').querySelectorAll('.choice').forEach(b => b.onclick = () => answer(+b.dataset.i));
+  if (current.bonus) $('skip-bonus').onclick = skip;
+}
+const skip = () => current?.q.type ? activityDone(false) : answer(-1);
+
+// a first miss on a monster keeps the same challenge for one more try
+const willRetry = ok => me.stage < stages() && !current.bonus && !ok && !me.attempt;
+
+function activityDone(ok) {
+  if (busy || !current) return;
+  $('activity').classList.add(ok ? 'ok' : 'bad');
+  resolve(ok, willRetry(ok), renderQuestion);
 }
 
 addEventListener('keydown', e => {
   if (screen !== 'game' || e.target.tagName === 'INPUT') return;
   if (guideDone && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); guideDone(); return; }
   if (busy) return;
-  if (current?.bonus && (e.key === 's' || e.key === 'S')) { answer(-1); return; }
+  if (current?.bonus && (e.key === 's' || e.key === 'S')) { skip(); return; }
   const n = parseInt(e.key, 10);
   if (!n) return;
-  if (current && n <= current.choices.length) answer(n - 1);
+  if (current?.choices && n <= current.choices.length) answer(n - 1);
   else if (!current && me.stage >= stages() && n <= 3) chooseDiff(['easy', 'medium', 'hard'][n - 1]);
 });
 
@@ -280,12 +294,10 @@ async function answer(i) {
   if (busy || !current) return;
   const btns = [...$('qcard').querySelectorAll('.choice')];
   if (i >= 0 && btns[i]?.disabled) return;
-  busy = true;
-  const { q, choices, diff } = current;
+  const { q, choices } = current;
   const ok = i >= 0 && choices[i] === q.answer;
-  const boss = me.stage >= stages();
   // monsters give 2 attempts: the first miss keeps the question, the right answer stays hidden
-  const retry = !boss && !current.bonus && !ok && !me.attempt;
+  const retry = willRetry(ok);
   btns.forEach((b, j) => {
     b.disabled = true;
     if (retry) { if (j === i) b.classList.add('wrong', 'used'); }
@@ -293,16 +305,25 @@ async function answer(i) {
     else if (j === i) b.classList.add('wrong');
     else b.classList.add('dim');
   });
+  await resolve(ok, retry, () => btns.forEach(b => { if (!b.classList.contains('used')) b.disabled = false; }));
+}
+
+// Shared by quiz questions and activities: animate, score on the server, then retry / next / boss / victory
+async function resolve(ok, retry, reopen) {
+  busy = true;
+  const { q, diff } = current;
+  const boss = me.stage >= stages();
+  const answerText = q.type ? activityReveal(q) : q.answer;
   const ex = $('explain');
   ex.className = 'explain ' + (ok ? 'ok' : 'bad');
-  ex.textContent = retry ? '✘ Not quite: +10 sec. One more try!' : (ok ? '✔ Correct! ' : '✘ Not quite. ') + (q.explain || (ok ? '' : `Answer: ${q.answer}`));
+  ex.textContent = retry ? '✘ Not quite: +10 sec. One more try!' : (ok ? '✔ Correct! ' : '✘ Not quite. ') + (q.explain || (ok ? '' : `Answer: ${answerText}`));
 
   const before = { stage: me.stage, hp: me.boss_hp, attempt: me.attempt || 0 };
   const req = send(before, ok, diff);
 
   if (current.bonus) {
     $('skip-bonus').disabled = true;
-    ex.textContent = ok ? `⭐ Bonus! ${BONUS_SEC} seconds off your time. ${q.explain || ''}` : `No bonus this time, no penalty either. ${q.explain || `Answer: ${q.answer}`}`;
+    ex.textContent = ok ? `⭐ Bonus! ${BONUS_SEC} seconds off your time. ${q.explain || ''}` : `No bonus this time, no penalty either. ${q.explain || `Answer: ${answerText}`}`;
     results[before.stage] = ok ? 'bonus' : 'skip'; saveResults();
     if (ok) {
       animate($('knight'), 'attack', 450);
@@ -333,9 +354,9 @@ async function answer(i) {
   if (res) me = res;
   if (!boss && !current.bonus && me.stage === before.stage && !me.finished_at) {
     // second attempt on the same monster
-    btns.forEach(b => { if (!b.classList.contains('used')) b.disabled = false; });
-    ex.textContent = '✘ +10 sec. Last try for this monster!';
     busy = false;
+    reopen();
+    $('explain').textContent = '✘ +10 sec. Last try for this monster!';
     return;
   }
   if (boss) {
@@ -410,7 +431,7 @@ function practiceAnswer(ok, diff) {
 function startPractice() {
   practice = true;
   pev = { status: 'running', started_at: new Date(now()).toISOString(), duration_sec: 300 };
-  me = { id: 'practice', name: $('name').value.trim() || 'Adventurer', stage: 0, boss_hp: 100, attempt: 0, correct: 0, wrong: 0, penalty_sec: 0, bonus_sec: 0, bonus_count: 0, tab_strikes: 0, restarts: 0, created_at: pev.started_at, finished_at: null, total_ms: null };
+  me = { id: 'practice', name: $('name').value.trim() || 'Adventurer', stage: 0, boss_hp: 100, attempt: 0, correct: 0, wrong: 0, penalty_sec: 0, bonus_sec: 0, bonus_count: 0, tab_strikes: 0, restarts: 0, stars: 0, created_at: pev.started_at, finished_at: null, total_ms: null };
   results = []; hearts = 3; shownZone = null; bossIntroDone = false; usedBoss = new Set(); streak = 0; guidesSeen = new Set();
   document.body.classList.add('practice');
   screen = null;
@@ -433,7 +454,7 @@ $('exit-practice').onclick = exitPractice;
 let pendingWarn = null;
 document.addEventListener('visibilitychange', async () => {
   if (document.hidden) {
-    if (practice || !cred || !me || me.finished_at || screen !== 'game' || eventPhase(ev) !== 'running') return;
+    if (practice || !cred || !me || me.finished_at || screen !== 'game' || eventPhase(ev) !== 'open') return;
     const before = me;
     const { data } = await sb.rpc('report_tab_switch', { p_id: cred.id, p_token: cred.token });
     if (!data?.id) return;
@@ -607,22 +628,20 @@ function renderBoard() {
   flipList($('lb'), ranked.slice(0, 10), p => p.id, (p, i) => `
     <span class="r">${i + 1}</span>
     <span class="nm">${esc(p.name)}</span>
-    <span class="tm ${p.finished_at ? 'fin' : ''}">${p.bonus_count ? `⭐${p.bonus_count} ` : ''}${stageLabel(p)}</span>
+    <span class="tm ${p.finished_at ? 'fin' : ''}">⭐${p.stars || 0} · ${stageLabel(p)}</span>
     <span class="bar"><i style="width:${progressPct(p)}%"></i></span>`);
   [...$('lb').children].forEach(li => li.classList.toggle('me', li.dataset.k === me?.id));
 }
 
 function myElapsed() {
-  const e = curEv();
-  if (!me || !e?.started_at) return 0;
+  if (!me) return 0;
   if (me.finished_at) return me.total_ms;
-  const start = Math.max(new Date(me.created_at).getTime(), new Date(e.started_at).getTime());
-  return Math.max(0, now() - start + (me.penalty_sec - (me.bonus_sec || 0)) * 1000);
+  return Math.max(0, now() - new Date(me.created_at).getTime() + (me.penalty_sec - (me.bonus_sec || 0)) * 1000);
 }
 
 function tick() {
   if (screen !== 'game') return;
-  const left = eventEnd(curEv()) - now();
+  const left = playerEnd(me, curEv()) - now();
   $('ev-time').textContent = fmt(left);
   $('ev-timer').classList.toggle('low', left < 60000);
   $('my-time').textContent = fmt(myElapsed());
@@ -645,7 +664,7 @@ function stats() {
   return `<div class="stats">
     <div class="stat"><div class="v">${me.finished_at ? fmt(me.total_ms) : `${me.stage}/${TOTAL_STAGES}`}</div><div class="l">${me.finished_at ? 'Final time' : 'Checkpoints'}</div></div>
     <div class="stat"><div class="v">#${r || '–'}</div><div class="l">Rank of ${ranked.length}</div></div>
-    <div class="stat"><div class="v">⭐${me.bonus_count}</div><div class="l">Bonus (−${me.bonus_sec}s)</div></div>
+    <div class="stat"><div class="v">⭐${me.stars || 0}</div><div class="l">Stars · ${me.bonus_count} chests (−${me.bonus_sec}s)</div></div>
     <div class="stat"><div class="v">${me.correct}</div><div class="l">Correct</div></div>
     <div class="stat"><div class="v">${me.wrong}</div><div class="l">Wrong (+${me.penalty_sec}s)</div></div>
   </div>`;
