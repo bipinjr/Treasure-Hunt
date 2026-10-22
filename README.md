@@ -42,9 +42,9 @@ Extras: chiptune sound effects (🔊 button in the HUD to mute), combo streaks, 
 
 ## Tests
 ```bash
-node --test tests/content.test.mjs
+node --test tests/content.test.mjs tests/html-scripts.test.mjs
 ```
-Checks that the question file matches the server's stage layout and that every answer is one of its choices.
+Checks the question file matches the server stage layout, every activity is solvable, and every page script parses.
 
 ## Docs
 Original design document and technical proposal: `docs/`.

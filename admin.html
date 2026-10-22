@@ -388,8 +388,7 @@
       if (await call('admin_start', { minutes: m })) { msg(`Saved: every new player gets ${m} minute${m === 1 ? '' : 's'} from the moment they join.`); refresh(); }
     };
     $('reset').onclick = async () => {
-      if (prompt('This deletes ALL players and scores for good. Export the Excel first.
-Type RESET to confirm:') === 'RESET' && await call('admin_reset')) { msg('Everything reset. The event stays open for new players.'); refresh(); }
+      if (prompt('This deletes ALL players and scores for good. Export the Excel first. Type RESET to confirm:') === 'RESET' && await call('admin_reset')) { msg('Everything reset. The event stays open for new players.'); refresh(); }
     };
     $('save-clue').onclick = async () => { if (await call('admin_set_clue', { p_clue: $('clue').value.trim() })) msg('Clue saved.'); };
     $('setpw').onclick = async () => {
