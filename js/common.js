@@ -5,7 +5,11 @@ export const SUPABASE_URL = 'https://rbaibnntcgpdeybvtool.supabase.co';
 export const SUPABASE_KEY = 'sb_publishable_HdiovBpEe3EN29aj1YDsEA_BkdJmMO2';
 export const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-export const TOTAL_STAGES = 12;
+export const TOTAL_STAGES = 28;   // must match submit_answer in SQL (4 zones x 7, bonus chest at stage % 7 === 6)
+
+// Short progress text used by every screen
+export const stageLabel = p => p.finished_at ? fmt(p.total_ms) : p.stage >= TOTAL_STAGES ? `BOSS ${p.boss_hp}HP` : `${p.stage}/${TOTAL_STAGES}`;
+export const zoneLabel = p => p.finished_at ? 'Finished' : p.stage >= TOTAL_STAGES ? 'Boss' : `Zone ${Math.floor(p.stage / 7) + 1}`;
 
 // Server clock offset so every PC shows the same countdown
 let offset = 0;
@@ -42,7 +46,7 @@ export function rank(players) {
     const fa = a.finished_at != null, fb = b.finished_at != null;
     if (fa !== fb) return fa ? -1 : 1;
     if (fa) return a.total_ms - b.total_ms || a.wrong - b.wrong || new Date(a.finished_at) - new Date(b.finished_at);
-    return b.stage - a.stage || a.boss_hp - b.boss_hp || a.penalty_sec - b.penalty_sec || a.wrong - b.wrong;
+    return b.stage - a.stage || a.boss_hp - b.boss_hp || (a.penalty_sec - a.bonus_sec) - (b.penalty_sec - b.bonus_sec) || a.wrong - b.wrong;
   });
 }
 

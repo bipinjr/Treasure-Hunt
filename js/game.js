@@ -1,5 +1,5 @@
-import { sb, syncClock, now, fmt, eventEnd, eventPhase, rank, progressPct, esc, fetchEvent, fetchPlayers, flipList, confetti, embers, TOTAL_STAGES } from './common.js';
-import { ZONES, ENEMIES, BOSS, RUNE_WORD, PRACTICE } from './questions.js';
+import { sb, syncClock, now, fmt, eventEnd, eventPhase, rank, progressPct, esc, fetchEvent, fetchPlayers, flipList, confetti, embers, stageLabel, TOTAL_STAGES } from './common.js';
+import { ZONES, ENEMIES, BOSS, RUNE_WORD, PRACTICE, BOSS_GUIDE, BONUS_GUIDE, BONUS_SEC } from './questions.js';
 import { spriteSVG } from './sprites.js';
 import { sfx } from './sfx.js';
 
@@ -31,6 +31,10 @@ const stages = () => practice ? PRACTICE.enemies.length : TOTAL_STAGES;
 const bossPool = d => practice ? PRACTICE.boss[d] : BOSS.pool[d];
 const runeWord = () => practice ? PRACTICE.word : RUNE_WORD;
 const curEv = () => practice ? pev : ev;
+const isBonus = s => !practice && !!ENEMIES[s]?.bonus;
+// Runes belong to monsters only: 6 per zone in the real run, one per monster in practice
+const runeStage = i => practice ? i : i + Math.floor(i / 6);
+let guidesSeen = new Set();
 
 // ---------- boot ----------
 embers($('embers'));
@@ -55,6 +59,8 @@ async function init() {
   setInterval(async () => { const e = await fetchEvent(); if (e) { ev = e; route(); } }, 5000);
   setInterval(refreshPlayers, 3000);
   setInterval(tick, 250);
+  // presence heartbeat for the admin's "online now" view
+  setInterval(() => { if (cred && !practice && me && !me.finished_at) sb.rpc('ping', { p_id: cred.id, p_token: cred.token }); }, 30000);
   route();
 }
 
@@ -106,7 +112,7 @@ $('join').addEventListener('submit', async e => {
   cred = { id: data[0].player_id, token: data[0].token };
   localStorage.setItem(KEY, JSON.stringify(cred));
   const r = await sb.rpc('get_player', { p_id: cred.id, p_token: cred.token });
-  me = r.data; results = []; hearts = 3; shownZone = null; bossIntroDone = false; usedBoss = new Set();
+  me = r.data; results = []; hearts = 3; shownZone = null; bossIntroDone = false; usedBoss = new Set(); guidesSeen = new Set();
   players = await fetchPlayers();
   route();
 });
@@ -146,15 +152,18 @@ function setAccent(c) { document.documentElement.style.setProperty('--accent', c
 function renderTrack() {
   let h = '';
   for (let i = 0; i < stages(); i++) {
-    const cls = results[i] === 'ok' ? 'done' : results[i] === 'miss' ? 'miss' : i === me.stage ? 'now' : '';
-    h += `<span class="pip ${cls} ${i && i % 3 === 0 ? 'gap' : ''}"></span>`;
+    const cls = results[i] === 'ok' || results[i] === 'bonus' ? 'done' : results[i] === 'miss' || results[i] === 'skip' ? 'miss' : i === me.stage ? 'now' : '';
+    const group = practice ? 3 : 7;
+    h += `<span class="pip ${cls} ${isBonus(i) ? 'star' : ''} ${i && i % group === 0 ? 'gap' : ''}"></span>`;
   }
   h += `<span class="skull ${me.stage >= stages() ? 'now' : ''}">💀</span>`;
   $('track').innerHTML = h;
 }
 function renderRunes() {
-  $('runes').innerHTML = [...runeWord()].map((ch, i) =>
-    `<span class="rune ${results[i] === 'ok' ? 'got' : results[i] === 'miss' ? 'lost' : ''} ${!practice && (i === 7 || i === 9) ? 'gap' : ''}" data-i="${i}">${results[i] === 'miss' ? '✕' : ch}</span>`).join('');
+  $('runes').innerHTML = [...runeWord()].map((ch, i) => {
+    const r = results[runeStage(i)];
+    return `<span class="rune ${r === 'ok' ? 'got' : r === 'miss' ? 'lost' : ''} ${!practice && i && i % 6 === 0 ? 'gap' : ''}" data-i="${i}">${r === 'miss' ? '✕' : ch}</span>`;
+  }).join('');
 }
 function renderHearts(refill) {
   $('hearts').innerHTML = [0, 1, 2].map(i => spriteSVG('heart', null, i < hearts ? (refill ? 'refill' : '') : 'lost')).join('');
@@ -170,13 +179,19 @@ function spawn() {
     const title = practice ? 'Training Grounds' : z.name;
     const sub = practice ? 'Practice run · does not count' : `Zone ${ZONES.indexOf(z) + 1} · ${z.domain}`;
     $('zone-name').textContent = title; $('zone-domain').textContent = sub;
-    if (shownZone !== z.id) { shownZone = z.id; banner(title, sub); sfx.zone(); }
+    const newZone = shownZone !== z.id;
+    if (newZone) { shownZone = z.id; banner(title, sub); sfx.zone(); }
     enemyEl.querySelector('.body').innerHTML = spriteSVG(e.sprite, e.palette);
-    $('nameplate').innerHTML = `<div class="n">${esc(e.name)}</div><div class="d ${e.difficulty}">${e.difficulty}</div>`;
+    if (e.bonus) enemyEl.classList.add('chest-foe');
+    $('nameplate').innerHTML = e.bonus
+      ? `<div class="n">⭐ BONUS CHEST</div><div class="d easy">right = −${BONUS_SEC}s · wrong = free</div>`
+      : `<div class="n">${e.guardian ? '👑 ' : ''}${esc(e.name)}</div><div class="d ${e.difficulty}">${e.guardian ? 'zone guardian' : e.difficulty}</div>`;
     void enemyEl.offsetWidth; enemyEl.classList.add('enter');
     const q = pick(e.variants);
-    current = { q, choices: shuffle(q.choices) };
-    renderQuestion();
+    const ask = () => { current = { q, choices: shuffle(q.choices), bonus: e.bonus }; renderQuestion(); };
+    if (newZone && !practice) guide(`${title} · ${z.domain}`, z.guide, `zone-${z.id}`).then(ask);
+    else if (e.bonus) guide('Bonus chest', BONUS_GUIDE, 'bonus').then(ask);
+    else ask();
   } else {
     setAccent('#c27bff');
     $('zone-name').textContent = 'The Summarizer'; $('zone-domain').textContent = 'Final boss · all four zones';
@@ -185,7 +200,7 @@ function spawn() {
     renderBossPlate();
     void enemyEl.offsetWidth; enemyEl.classList.add('enter');
     if (!bossIntroDone) { bossIntroDone = true; banner('THE SUMMARIZER', 'Final boss · 100 HP'); flash('rgba(140,60,230,.6)'); shake($('s-game')); sfx.roar(); }
-    renderDiffPicker();
+    guide('The Summarizer', BOSS_GUIDE, 'boss').then(renderDiffPicker);
   }
   renderTrack();
 }
@@ -222,13 +237,17 @@ function renderQuestion() {
   $('qcard').innerHTML = `
     <p class="prompt">${diff ? `<span class="d ${diff}">[${diff} · ${BOSS.damage[diff]} dmg]</span> ` : ''}${esc(q.prompt)}</p>
     <div class="choices">${choices.map((c, i) => `<button class="choice" data-i="${i}"><span class="key">${i + 1}</span><span>${esc(c)}</span></button>`).join('')}</div>
-    <p class="explain" id="explain"></p>`;
+    <div class="q-foot"><p class="explain" id="explain"></p>${current.bonus ? '<button class="btn ghost skip" id="skip-bonus">Skip bonus (S)</button>' : ''}</div>`;
   replay($('qcard'), 'rise');
   $('qcard').querySelectorAll('.choice').forEach(b => b.onclick = () => answer(+b.dataset.i));
+  if (current.bonus) $('skip-bonus').onclick = () => answer(-1);
 }
 
 addEventListener('keydown', e => {
-  if (screen !== 'game' || busy || e.target.tagName === 'INPUT') return;
+  if (screen !== 'game' || e.target.tagName === 'INPUT') return;
+  if (guideDone && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); guideDone(); return; }
+  if (busy) return;
+  if (current?.bonus && (e.key === 's' || e.key === 'S')) { answer(-1); return; }
   const n = parseInt(e.key, 10);
   if (!n) return;
   if (current && n <= current.choices.length) answer(n - 1);
@@ -239,7 +258,7 @@ async function answer(i) {
   if (busy || !current) return;
   busy = true;
   const { q, choices, diff } = current;
-  const ok = choices[i] === q.answer;
+  const ok = i >= 0 && choices[i] === q.answer;
   const btns = [...$('qcard').querySelectorAll('.choice')];
   btns.forEach((b, j) => {
     b.disabled = true;
@@ -255,11 +274,27 @@ async function answer(i) {
   const req = send(before, ok, diff);
   const boss = before.stage >= stages();
 
-  if (ok) {
+  if (current.bonus) {
+    $('skip-bonus').disabled = true;
+    ex.textContent = ok ? `⭐ Bonus! ${BONUS_SEC} seconds off your time. ${q.explain || ''}` : `No bonus this time, no penalty either. ${q.explain || `Answer: ${q.answer}`}`;
+    results[before.stage] = ok ? 'bonus' : 'skip'; saveResults();
+    if (ok) {
+      animate($('knight'), 'attack', 450);
+      await sleep(250);
+      $('enemy').classList.add('die');
+      burst($('enemy'), 34, ['#f2c14e', '#ffdf8a', '#fff', '#3ddc84']);
+      floatText(`−${BONUS_SEC}s`, $('enemy'));
+      sfx.victory();
+      await sleep(900);
+    } else {
+      sfx.click();
+      await sleep(1300);
+    }
+  } else if (ok) {
     streak++;
     if (streak >= 2) showCombo(streak);
     await heroStrike(boss ? BOSS.damage[diff] : null);
-    if (!boss) { results[before.stage] = 'ok'; saveResults(); await killEnemy(before.stage); }
+    if (!boss) { results[before.stage] = 'ok'; saveResults(); await killEnemy(before.stage - (practice ? 0 : Math.floor(before.stage / 7))); }
   } else {
     streak = 0; showCombo(0);
     await enemyStrike();
@@ -338,7 +373,7 @@ function startPractice() {
   practice = true;
   pev = { status: 'running', started_at: new Date(now()).toISOString(), duration_sec: 300 };
   me = { id: 'practice', name: $('name').value.trim() || 'Adventurer', stage: 0, boss_hp: 100, correct: 0, wrong: 0, penalty_sec: 0, created_at: pev.started_at, finished_at: null, total_ms: null };
-  results = []; hearts = 3; shownZone = null; bossIntroDone = false; usedBoss = new Set(); streak = 0;
+  results = []; hearts = 3; shownZone = null; bossIntroDone = false; usedBoss = new Set(); streak = 0; guidesSeen = new Set();
   document.body.classList.add('practice');
   screen = null;
   startGame();
@@ -399,6 +434,26 @@ function banner(t, s) {
   $('stage').append(b);
   setTimeout(() => b.remove(), 1800);
 }
+// Tips card shown in the question area; resolves when the player continues
+let guideDone = null;
+function guide(title, tips, key) {
+  if (guidesSeen.has(key)) return Promise.resolve();
+  guidesSeen.add(key);
+  return new Promise(res => {
+    busy = true;
+    $('qcard').innerHTML = `
+      <div class="guide">
+        <h3>📜 ${esc(title)}</h3>
+        <ul>${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+        <button class="btn" id="guide-go">Got it, fight! (Enter)</button>
+      </div>`;
+    replay($('qcard'));
+    guideDone = () => { guideDone = null; busy = false; res(); };
+    $('guide-go').onclick = guideDone;
+    $('guide-go').focus();
+  });
+}
+
 function toast(msg) {
   const t = document.createElement('div');
   t.className = 'toast'; t.textContent = msg;
@@ -422,16 +477,16 @@ async function heroStrike(dmg) {
   await sleep(450);
 }
 
-async function killEnemy(stage) {
+async function killEnemy(rune) {
   const e = $('enemy');
   e.classList.add('die');
   sfx.die();
   burst(e, 26, ['#f2c14e', '#fff', getComputedStyle(document.documentElement).getPropertyValue('--accent')]);
   // the dropped letter flies up into the rune bar
-  const slot = $('runes').querySelector(`[data-i="${stage}"]`);
+  const slot = $('runes').querySelector(`[data-i="${rune}"]`);
   const from = e.getBoundingClientRect(), to = slot.getBoundingClientRect();
   const f = document.createElement('div');
-  f.className = 'flyer'; f.textContent = runeWord()[stage];
+  f.className = 'flyer'; f.textContent = runeWord()[rune];
   f.style.left = from.left + from.width / 2 + 'px'; f.style.top = from.top + 'px';
   document.body.append(f);
   requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -441,7 +496,7 @@ async function killEnemy(stage) {
   f.remove();
   sfx.coin();
   renderRunes();
-  const s = $('runes').querySelector(`[data-i="${stage}"]`);
+  const s = $('runes').querySelector(`[data-i="${rune}"]`);
   s.animate([{ transform: 'scale(1.5)' }, { transform: 'translateY(-2px)' }], { duration: 350, easing: 'ease-out' });
 }
 
@@ -468,7 +523,7 @@ function renderBoard() {
   flipList($('lb'), ranked.slice(0, 10), p => p.id, (p, i) => `
     <span class="r">${i + 1}</span>
     <span class="nm">${esc(p.name)}</span>
-    <span class="tm ${p.finished_at ? 'fin' : ''}">${p.finished_at ? fmt(p.total_ms) : p.stage >= TOTAL_STAGES ? 'BOSS' : `${p.stage}/12`}</span>
+    <span class="tm ${p.finished_at ? 'fin' : ''}">${p.bonus_count ? `⭐${p.bonus_count} ` : ''}${stageLabel(p)}</span>
     <span class="bar"><i style="width:${progressPct(p)}%"></i></span>`);
   [...$('lb').children].forEach(li => li.classList.toggle('me', li.dataset.k === me?.id));
 }
@@ -478,7 +533,7 @@ function myElapsed() {
   if (!me || !e?.started_at) return 0;
   if (me.finished_at) return me.total_ms;
   const start = Math.max(new Date(me.created_at).getTime(), new Date(e.started_at).getTime());
-  return now() - start + me.penalty_sec * 1000;
+  return Math.max(0, now() - start + (me.penalty_sec - (me.bonus_sec || 0)) * 1000);
 }
 
 function tick() {
@@ -487,7 +542,7 @@ function tick() {
   $('ev-time').textContent = fmt(left);
   $('ev-timer').classList.toggle('low', left < 60000);
   $('my-time').textContent = fmt(myElapsed());
-  $('my-pen').textContent = me.penalty_sec ? `incl. +${me.penalty_sec}s penalty` : '';
+  $('my-pen').innerHTML = [me.penalty_sec ? `<span class="bad">+${me.penalty_sec}s</span>` : '', me.bonus_sec ? `<span class="good">−${me.bonus_sec}s ⭐</span>` : ''].join(' ');
   if (left <= 0 && !me.finished_at) timeUp();
 }
 
@@ -502,8 +557,9 @@ function stats() {
   const ranked = rank(players);
   const r = ranked.findIndex(p => p.id === me.id) + 1;
   return `<div class="stats">
-    <div class="stat"><div class="v">${me.finished_at ? fmt(me.total_ms) : `${me.stage}/12`}</div><div class="l">${me.finished_at ? 'Final time' : 'Monsters slain'}</div></div>
+    <div class="stat"><div class="v">${me.finished_at ? fmt(me.total_ms) : `${me.stage}/${TOTAL_STAGES}`}</div><div class="l">${me.finished_at ? 'Final time' : 'Checkpoints'}</div></div>
     <div class="stat"><div class="v">#${r || '–'}</div><div class="l">Rank of ${ranked.length}</div></div>
+    <div class="stat"><div class="v">⭐${me.bonus_count}</div><div class="l">Bonus (−${me.bonus_sec}s)</div></div>
     <div class="stat"><div class="v">${me.correct}</div><div class="l">Correct</div></div>
     <div class="stat"><div class="v">${me.wrong}</div><div class="l">Wrong (+${me.penalty_sec}s)</div></div>
   </div>`;
@@ -516,7 +572,7 @@ function practiceEnd(won) {
   $('end').innerHTML = `
     <div class="kicker">Practice ${won ? 'complete' : 'over'}</div>
     <h2 class="title">${won ? 'YOU ARE READY!' : 'TIME IS UP'}</h2>
-    <p class="sub" style="color:var(--muted);font-size:20px">Practice runs don't count. The real cavern has 12 monsters and new questions.</p>
+    <p class="sub" style="color:var(--muted);font-size:20px">Practice runs don't count. The real cavern has 4 zones, 24 monsters, bonus chests and new questions.</p>
     ${stats()}
     <div class="row" style="justify-content:center;margin-top:22px"><button class="btn" id="exit-practice-end">⚔ BACK TO THE GATE</button></div>`;
   $('exit-practice-end').onclick = exitPractice;

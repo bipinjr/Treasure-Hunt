@@ -16,7 +16,7 @@
   <main class="board">
     <div class="board-head">
       <div>
-        <div class="kicker">Tech Quest · Live</div>
+        <div class="kicker">Tech Quest · Live · <span id="live-count">0 playing</span></div>
         <h1 class="title">CAVERN OF CODE</h1>
       </div>
       <div class="big-timer" id="bt"><div class="lbl" id="bt-lbl">Waiting to start</div><div class="val" id="bt-val">--:--</div></div>
@@ -28,16 +28,18 @@
     </div>
   </main>
   <script type="module">
-    import { sb, syncClock, now, fmt, eventEnd, eventPhase, rank, progressPct, esc, fetchEvent, fetchPlayers, flipList, embers, TOTAL_STAGES } from './js/common.js';
+    import { sb, syncClock, now, fmt, eventEnd, eventPhase, rank, progressPct, esc, fetchEvent, fetchPlayers, flipList, embers, stageLabel } from './js/common.js';
     const $ = id => document.getElementById(id);
     let ev = null, players = [];
     embers($('embers'));
 
-    const label = p => p.finished_at ? fmt(p.total_ms) : p.stage >= TOTAL_STAGES ? `BOSS ${p.boss_hp}HP` : `${p.stage}/12`;
+    const label = p => (p.bonus_count ? `⭐${p.bonus_count} ` : '') + stageLabel(p);
 
     function render() {
       const r = rank(players);
       $('empty').hidden = r.length > 0;
+      const fin = r.filter(p => p.finished_at).length;
+      $('live-count').textContent = `${r.length - fin} playing · ${fin} finished`;
       const medals = ['🥇', '🥈', '🥉'];
       // podium order: 2nd, 1st, 3rd
       $('podium').innerHTML = [1, 0, 2].map(i => {
