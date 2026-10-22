@@ -380,7 +380,9 @@ function showCombo(n) {
 async function send(before, ok, diff) {
   if (practice) return practiceAnswer(ok, diff);
   for (let attempt = 0; attempt < 4; attempt++) {
-    const { data, error } = await sb.rpc('submit_answer', { p_id: cred.id, p_token: cred.token, p_stage: before.stage, p_hp: before.hp, p_attempt: before.attempt, p_correct: ok, p_diff: diff || null });
+    // a hung request on bad Wi-Fi times out and retries; the server ignores repeats via the stage/attempt guard
+    const { data, error } = await sb.rpc('submit_answer', { p_id: cred.id, p_token: cred.token, p_stage: before.stage, p_hp: before.hp, p_attempt: before.attempt, p_correct: ok, p_diff: diff || null })
+      .abortSignal(AbortSignal.timeout(8000));
     if (!error) return data;
     if (error.message?.includes('Time is up')) return 'timeup';
     await sleep(600 * (attempt + 1));
@@ -662,6 +664,48 @@ function practiceEnd(won) {
   $('exit-practice-end').onclick = exitPractice;
 }
 
+// ---------- feedback (real runs only) ----------
+const FB_STARS = [['overall', 'How is the overall experience?', true], ['fun', 'How fun was the game?'], ['clarity', 'How clear were the questions and zone guides?']];
+const fbKey = () => 'tq_fb_' + cred?.id;
+function feedbackForm() {
+  let sent = false;
+  try { sent = !!localStorage.getItem(fbKey()); } catch {}
+  if (sent) return '<div class="feedback done"><p>✔ Thanks for your feedback!</p></div>';
+  const stars = (k, label, req) => `
+    <fieldset class="fb-q"><legend>${label}${req ? ' <span class="req">*</span>' : ''}</legend>
+      <div class="stars" role="radiogroup">${[5, 4, 3, 2, 1].map(n => `<label><input type="radio" name="${k}" value="${n}" ${req ? 'required' : ''}><span aria-hidden="true">★</span><span class="sr">${n} out of 5</span></label>`).join('')}</div>
+    </fieldset>`;
+  return `
+    <form class="feedback" id="feedback">
+      <h3>Tell us what you thought</h3>
+      ${FB_STARS.map(([k, l, r]) => stars(k, l, r)).join('')}
+      <fieldset class="fb-q"><legend>Did this make you more interested in computer science / BCA?</legend>
+        <div class="chips">${['Yes', 'Maybe', 'No'].map(v => `<label><input type="radio" name="interest" value="${v}"><span>${v}</span></label>`).join('')}</div>
+      </fieldset>
+      <fieldset class="fb-q"><legend>What should we improve? <span class="opt">(optional)</span></legend>
+        <textarea name="comment" maxlength="500" rows="2" placeholder="Anything you liked or didn't like"></textarea>
+      </fieldset>
+      <button class="btn" type="submit">Send feedback</button>
+      <p class="fb-msg" role="status"></p>
+    </form>`;
+}
+function bindFeedback() {
+  const f = $('feedback');
+  if (!f) return;
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const d = new FormData(f), msg = f.querySelector('.fb-msg');
+    if (!d.get('overall')) { msg.textContent = 'Please rate the overall experience.'; return; }
+    f.querySelector('button').disabled = true; msg.textContent = 'Sending…';
+    const num = k => d.get(k) ? +d.get(k) : null;
+    const { error } = await sb.rpc('submit_feedback', { p_id: cred.id, p_token: cred.token, p_overall: num('overall'), p_fun: num('fun'), p_clarity: num('clarity'), p_interest: d.get('interest') || '', p_comment: d.get('comment') || '' });
+    if (error) { f.querySelector('button').disabled = false; msg.textContent = 'Could not send. Check the internet and try again.'; return; }
+    try { localStorage.setItem(fbKey(), '1'); } catch {}
+    f.outerHTML = '<div class="feedback done"><p>✔ Thanks for your feedback!</p></div>';
+    sfx.coin();
+  };
+}
+
 function victory() {
   if (practice) return practiceEnd(true);
   show('end');
@@ -674,7 +718,9 @@ function victory() {
       ${spriteSVG('chestBody', null, 'cbody')}${spriteSVG('chestLid', null, 'clid')}
     </div>
     <div class="clue"><small>YOUR NEXT CLUE</small>${esc(ev?.clue || '')}</div>
-    ${stats()}`;
+    ${stats()}
+    ${feedbackForm()}`;
+  bindFeedback();
   setTimeout(() => { $('chest')?.classList.add('open'); confetti($('confetti')); sfx.victory(); }, 700);
   // keep rank fresh while they celebrate
   clearInterval(endTimer);
@@ -691,7 +737,9 @@ function timeUp() {
     <div class="kicker">Time is up</div>
     <h2 class="title">THE CAVERN SEALS SHUT</h2>
     <p class="sub" style="color:var(--muted);font-size:20px">You fought bravely, ${esc(me.name)}. Here is how far you got:</p>
-    ${stats()}`;
+    ${stats()}
+    ${feedbackForm()}`;
+  bindFeedback();
   clearInterval(endTimer);
   endTimer = setInterval(async () => {
     if (!cred) return;

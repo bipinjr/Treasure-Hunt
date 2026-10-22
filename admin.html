@@ -93,6 +93,24 @@
     </div>
 
     <div class="panel admin-card">
+      <div class="row" style="justify-content:space-between">
+        <h3>Player feedback <span class="muted-small" id="fb-count"></span></h3>
+        <div class="row">
+          <button class="btn ghost" id="fb-export" style="font-size:11px;padding:10px 14px">⬇ Feedback CSV</button>
+          <button class="btn ghost" id="fb-clear" style="font-size:11px;padding:10px 14px;color:var(--red)">Clear feedback</button>
+        </div>
+      </div>
+      <div class="ledger fb-ledger" id="fb-summary"></div>
+      <div class="table-scroll">
+        <table class="admin-table">
+          <thead><tr><th>Player</th><th>Overall experience</th><th>Fun</th><th>Clarity</th><th>More interested?</th><th>Comment</th><th>Sent</th></tr></thead>
+          <tbody id="fb-rows"></tbody>
+        </table>
+      </div>
+      <p class="muted-small">Players see the form after the chest or when time runs out. Feedback is kept when you press Reset all.</p>
+    </div>
+
+    <div class="panel admin-card">
       <h3>Chest clue (shown to every player who beats the boss)</h3>
       <div class="row">
         <input class="field" id="clue" maxlength="300">
@@ -131,7 +149,7 @@
       if (error) { $('login-msg').textContent = 'Wrong password. Try again.'; sessionStorage.removeItem('tq_admin'); return; }
       pw = p; sessionStorage.setItem('tq_admin', p);
       $('login-screen').hidden = true; $('panel').hidden = false;
-      await syncClock(); await refresh();
+      await syncClock(); await refresh(); refreshFeedback();
       $('clue').value = ev?.clue || '';
     }
     $('login').onsubmit = e => { e.preventDefault(); unlock($('pw').value); };
@@ -290,6 +308,40 @@
       window.print();
       document.title = old;
     };
+
+    // ---------- feedback ----------
+    let feedback = [];
+    const starsTxt = n => n ? '★'.repeat(n) + '☆'.repeat(5 - n) : '–';
+    async function refreshFeedback() {
+      const { data, error } = await sb.rpc('admin_feedback', { pw });
+      if (error) return;
+      feedback = data || [];
+      const avg = k => { const v = feedback.map(f => f[k]).filter(Boolean); return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : '–'; };
+      const cnt = v => feedback.filter(f => f.interest === v).length;
+      $('fb-count').textContent = `(${feedback.length})`;
+      $('fb-summary').innerHTML = [
+        ['Responses', feedback.length], ['Overall experience', `${avg('overall')} / 5`], ['Fun', `${avg('fun')} / 5`], ['Clarity', `${avg('clarity')} / 5`],
+        ['More interested: yes', cnt('Yes')], ['Maybe', cnt('Maybe')], ['No', cnt('No')],
+      ].map(([l, v]) => `<div><b>${v}</b><span>${l}</span></div>`).join('');
+      $('fb-rows').innerHTML = feedback.length ? feedback.map(f => `<tr>
+        <td class="pname">${esc(f.name)}</td><td class="stars-txt">${starsTxt(f.overall)}</td><td class="stars-txt">${starsTxt(f.fun)}</td><td class="stars-txt">${starsTxt(f.clarity)}</td>
+        <td>${f.interest || '–'}</td><td class="fb-comment">${f.comment ? esc(f.comment) : '–'}</td><td>${new Date(f.created_at).toLocaleTimeString()}</td></tr>`).join('')
+        : '<tr><td colspan="7" class="empty-row">No feedback yet. It appears here as players finish.</td></tr>';
+    }
+    $('fb-export').onclick = () => {
+      const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const lines = [['Name', 'Overall experience (1-5)', 'Fun (1-5)', 'Clarity (1-5)', 'More interested in CS/BCA', 'Comment', 'Sent at']]
+        .concat(feedback.map(f => [f.name, f.overall, f.fun ?? '', f.clarity ?? '', f.interest ?? '', f.comment ?? '', f.created_at]));
+      const blob = new Blob(['﻿' + lines.map(l => l.map(cell).join(',')).join('\r\n')], { type: 'text/csv' });
+      const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `cavern-of-code-feedback-${stamp()}.csv` });
+      a.click();
+      URL.revokeObjectURL(a.href);
+      msg('Feedback CSV downloaded.');
+    };
+    $('fb-clear').onclick = async () => {
+      if (confirm('Delete ALL feedback? Export the feedback CSV first. This cannot be undone.') && await call('admin_clear_feedback')) { msg('Feedback cleared.'); refreshFeedback(); }
+    };
+    setInterval(() => { if (!$('panel').hidden) refreshFeedback(); }, 10000);
 
     function tick() {
       if (!ev) return;

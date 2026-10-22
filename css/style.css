@@ -569,3 +569,30 @@ body.practice .stage::after { content: 'PRACTICE'; position: absolute; top: 12px
 .warn-box.restart h2 { color: #ff8a8a; }
 
 .admin-table td.warn, .sc-facts b.warn { color: var(--red); }
+
+/* ---------- Feedback ---------- */
+.feedback { margin-top: 22px; padding: 18px 20px; border-radius: 12px; background: rgba(0,0,0,.3); border: 1px solid var(--line); display: grid; gap: 12px; text-align: left; }
+.feedback h3 { margin: 0; font-family: var(--display); font-size: 13px; color: var(--gold); line-height: 1.6; text-align: center; }
+.feedback.done { text-align: center; color: var(--green); font-size: 18px; }
+.feedback.done p { margin: 0; }
+.fb-q { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.fb-q legend { font-size: 17px; padding: 0; margin-bottom: 4px; }
+.fb-q .req { color: var(--gold); } .fb-q .opt { color: var(--muted); font-size: 14px; }
+.stars { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 4px; }
+.stars label { cursor: pointer; font-size: 30px; line-height: 1; color: rgba(255,255,255,.18); transition: color .12s, transform .12s; }
+.stars input, .chips input { position: absolute; opacity: 0; pointer-events: none; }
+.stars label:hover, .stars label:hover ~ label, .stars label:has(input:checked), .stars label:has(input:checked) ~ label { color: var(--gold); }
+.stars label:hover { transform: scale(1.15); }
+.stars label:has(input:focus-visible) { outline: 2px solid var(--gold-2); outline-offset: 2px; border-radius: 4px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.chips { display: flex; gap: 8px; }
+.chips label span { display: inline-block; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); cursor: pointer; transition: background .15s, color .15s; }
+.chips label:has(input:checked) span { background: var(--gold); color: #2a1704; border-color: var(--gold); }
+.chips label:has(input:focus-visible) span { outline: 2px solid var(--gold-2); outline-offset: 2px; }
+.feedback textarea { width: 100%; padding: 10px 12px; font: inherit; font-size: 16px; color: var(--text); background: rgba(0,0,0,.4); border: 1px solid var(--line); border-radius: 8px; resize: vertical; }
+.feedback .btn { justify-self: center; font-size: 12px; padding: 14px 22px; }
+.fb-msg { margin: 0; min-height: 1.2em; text-align: center; color: var(--muted); }
+.end { max-height: calc(100vh - 48px); overflow-y: auto; }
+.fb-ledger { padding: 12px 0; background: none; border: 0; box-shadow: none; }
+.admin-table .stars-txt { color: var(--gold); letter-spacing: 1px; white-space: nowrap; }
+.admin-table .fb-comment { max-width: 340px; white-space: normal; }
