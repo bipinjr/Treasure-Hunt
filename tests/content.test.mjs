@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ENEMIES, ZONES, BOSS, RUNE_WORD, PRACTICE } from '../js/questions.js';
-import { robotRun, robotSolve, bitsFor, activityReveal, ACTIVITY_LABEL } from '../js/activities.js';
+import { robotRun, robotSolve, bitsFor, activityReveal, ACTIVITY_LABEL, crosswordCells } from '../js/activities.js';
 
 test('stage layout matches the server', () => {
   assert.equal(ENEMIES.length, 28);
@@ -43,6 +43,16 @@ test('every activity is solvable', () => {
       // catch needs good.length - 1 caught, so at least 3 good items keep it fair
       case 'catch': assert.ok(q.good.length >= 3 && q.bad.length >= 2 && !q.good.some(g => q.bad.includes(g)), q.prompt); break;
       case 'match': assert.ok(q.pairs.length >= 3 && new Set(q.pairs.flat()).size === q.pairs.length * 2, q.prompt); break;
+      case 'fill': {
+        assert.equal(q.text.split('___').length - 1, q.answers.length, 'blank count: ' + q.text);
+        assert.ok(q.answers.every(w => q.bank.includes(w)) && new Set(q.bank).size === q.bank.length, q.text);
+        break;
+      }
+      case 'crossword': {
+        assert.ok(crosswordCells(q), 'crossing letters disagree: ' + q.prompt);
+        q.words.forEach(w => assert.match(w.answer, /^[A-Z]+$/, w.clue));
+        break;
+      }
     }
   }
 });

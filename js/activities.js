@@ -1,7 +1,7 @@
 // Hands-on activities. renderActivity draws one into `host` and calls done(ok) once, when the player checks.
 // The game engine handles scoring, retries and the answer reveal (activityReveal), exactly like a quiz question.
 
-export const ACTIVITY_LABEL = { bits: '💡 Light the bulbs', order: '🧩 Put it in order', type: '🔐 Crack the code', robot: '🤖 Robot coder', sort: '🛡️ Sort it out', shoot: '🎯 Shooting gallery', drive: '🏎️ Lane racer', catch: '🧺 Catch it', match: '🃏 Memory match' };
+export const ACTIVITY_LABEL = { bits: '💡 Light the bulbs', order: '🧩 Put it in order', type: '🔐 Crack the code', robot: '🤖 Robot coder', sort: '🛡️ Sort it out', shoot: '🎯 Shooting gallery', drive: '🏎️ Lane racer', catch: '🧺 Catch it', match: '🃏 Memory match', fill: '✏️ Fill in the blanks', crossword: '🔤 Crossword' };
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
@@ -43,6 +43,19 @@ export function bitsFor(target, vals) {
   return vals.filter(v => (left >= v ? (left -= v, true) : false));
 }
 
+// Crossword cells: "row,col" -> letter; a conflict (two words wanting different letters) returns null
+export function crosswordCells(q) {
+  const cells = new Map();
+  for (const w of q.words) {
+    for (let k = 0; k < w.answer.length; k++) {
+      const key = w.dir === 'down' ? `${w.row + k},${w.col}` : `${w.row},${w.col + k}`;
+      if (cells.has(key) && cells.get(key) !== w.answer[k]) return null;
+      cells.set(key, w.answer[k]);
+    }
+  }
+  return cells;
+}
+
 // Text shown when the player runs out of tries
 export function activityReveal(q) {
   switch (q.type) {
@@ -55,6 +68,8 @@ export function activityReveal(q) {
     case 'drive': return q.gates.map(g => `${g.q} ${g.answer}`).join(' · ');
     case 'catch': return `Catch: ${q.good.join(' · ')}`;
     case 'match': return q.pairs.map(p => `${p[0]} = ${p[1]}`).join(' · ');
+    case 'fill': return q.answers.join(', ');
+    case 'crossword': return q.words.map(w => w.answer).join(' · ');
   }
   return '';
 }
@@ -319,5 +334,55 @@ const RENDER = {
         setTimeout(() => { a.classList.remove('up'); c.classList.remove('up'); lock = false; if (lives <= 0) finish(false); }, 800);
       }
     });
+  },
+
+  // Tap words from the bank into the blanks, in order; tap a filled blank to clear it
+  fill(q, host, finish) {
+    const parts = q.text.split('___');
+    const picks = q.answers.map(() => null);
+    const bank = shuffle(q.bank);
+    const draw = () => {
+      host.innerHTML = `
+        <p class="fill-text">${parts.map((p, i) => esc(p) + (i < picks.length ? `<button class="blank ${picks[i] ? 'filled' : ''}" data-i="${i}" aria-label="Blank ${i + 1}">${picks[i] ? esc(picks[i]) : '&nbsp;'}</button>` : '')).join('')}</p>
+        <div class="word-bank">${bank.map(w => `<button class="tile" data-w="${esc(w)}" ${picks.includes(w) ? 'disabled' : ''}>${esc(w)}</button>`).join('')}</div>
+        <div class="act-row"><span class="act-hint">Tap a word to fill the next blank. Tap a blank to clear it.</span><button class="btn act-check" id="act-check" ${picks.includes(null) ? 'disabled' : ''}>Check</button></div>`;
+      host.querySelectorAll('.word-bank .tile').forEach(b => b.onclick = () => { const i = picks.indexOf(null); if (i >= 0) { picks[i] = b.dataset.w; draw(); } });
+      host.querySelectorAll('.blank').forEach(b => b.onclick = () => { picks[+b.dataset.i] = null; draw(); });
+      host.querySelector('#act-check').onclick = () => finish(picks.every((p, i) => p === q.answers[i]));
+    };
+    draw();
+  },
+
+  // Small crossword: type a letter per box; the cursor jumps to the next empty box
+  crossword(q, host, finish) {
+    const cells = crosswordCells(q);
+    const keys = [...cells.keys()].map(k => k.split(',').map(Number));
+    const rows = Math.max(...keys.map(k => k[0])) + 1, cols = Math.max(...keys.map(k => k[1])) + 1;
+    const num = new Map(q.words.map((w, i) => [`${w.row},${w.col}`, i + 1]));
+    let grid = '';
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const key = `${r},${c}`;
+      grid += cells.has(key)
+        ? `<div class="cw-cell">${num.has(key) ? `<i>${num.get(key)}</i>` : ''}<input maxlength="1" data-rc="${key}" autocomplete="off" spellcheck="false" aria-label="Row ${r + 1} column ${c + 1}"></div>`
+        : '<div class="cw-cell void"></div>';
+    }
+    host.innerHTML = `
+      <div class="cw-wrap">
+        <div class="cw-grid" style="grid-template-columns: repeat(${cols}, var(--cw))">${grid}</div>
+        <ol class="cw-clues">${q.words.map((w, i) => `<li><b>${i + 1} ${w.dir === 'down' ? 'Down' : 'Across'}</b> ${esc(w.clue)} <small>(${w.answer.length})</small></li>`).join('')}</ol>
+      </div>
+      <div class="act-row"><span class="act-hint">Click a box and type. Letters jump to the next box.</span><button class="btn act-check" id="act-check" disabled>Check</button></div>`;
+    const inputs = [...host.querySelectorAll('.cw-grid input')];
+    const check = host.querySelector('#act-check');
+    inputs.forEach((inp, i) => {
+      inp.addEventListener('input', () => {
+        inp.value = inp.value.replace(/[^a-z]/gi, '').toUpperCase();
+        if (inp.value) (inputs.slice(i + 1).find(x => !x.value) || inputs.find(x => !x.value))?.focus();
+        check.disabled = inputs.some(x => !x.value);
+      });
+      inp.addEventListener('keydown', e => { if (e.key === 'Backspace' && !inp.value && i > 0) inputs[i - 1].focus(); });
+    });
+    check.onclick = () => finish(inputs.every(x => x.value === cells.get(x.dataset.rc)));
+    setTimeout(() => inputs[0].focus(), 50);
   },
 };

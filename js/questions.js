@@ -53,8 +53,8 @@ export const ENEMIES = [
     { type: 'bits', prompt: 'Light bulbs that add up to 9', bits: [8, 4, 2, 1], target: 9, explain: '8 + 1 = 9. That is 1001 in binary!' },
   ]},
   { zone: 'crypt', name: 'Data Wraith', sprite: 'ghost', difficulty: 'easy', variants: [
-    { type: 'shoot', prompt: 'Shoot what we save as TEXT!', good: ['Phone number', 'Your name', 'Email'], bad: ['Price', 'Age', 'Marks', 'Temperature'], explain: 'You never do maths with phone numbers or names' },
-    { type: 'shoot', prompt: 'Shoot what we save as NUMBERS!', good: ['Price', 'Marks', 'Age'], bad: ['Name', 'Email', 'Phone number', 'City'], explain: 'Numbers are things you add or compare' },
+    { type: 'fill', prompt: 'Fill in the blanks', text: 'A ___ is the smallest piece of data. Eight of them make one ___.', answers: ['bit', 'byte'], bank: ['bit', 'byte', 'pixel', 'mouse'], explain: '8 bits = 1 byte' },
+    { type: 'fill', prompt: 'Fill in the blanks', text: 'We save a phone number as ___ and a price as a ___.', answers: ['text', 'number'], bank: ['text', 'number', 'Yes/No', 'date'], explain: 'You never do maths with phone numbers' },
   ]},
   { zone: 'crypt', name: 'Byte Spider', sprite: 'spider', difficulty: 'medium', variants: [
     { type: 'order', prompt: 'Smallest file to biggest 📦', items: ['A text message', 'A song', 'A full movie', 'A whole phone backup'], explain: 'A backup holds everything, so it is the biggest' },
@@ -103,8 +103,16 @@ export const ENEMIES = [
     { type: 'robot', prompt: 'Bigger maze! Reach the ⭐', size: 5, start: [0, 4], goal: [4, 4], walls: [[1, 4], [1, 3], [3, 4], [3, 3], [3, 1]], max: 10, explain: 'Plan the path before you press Run' },
   ]},
   { zone: 'forge', name: 'Forge Titan', sprite: 'golem', palette: 'forge', difficulty: 'hard', guardian: true, variants: [
-    { prompt: 'IF age ≥ 18 → "Can vote". ELSE → "Too young". Riya is 17. Output?', choices: ['Too young', 'Can vote', 'Both', 'Nothing'], answer: 'Too young', explain: '17 is less than 18' },
-    { prompt: 'x = 3. Repeat 2 times: double x. x = ?', choices: ['12', '6', '9', '5'], answer: '12', explain: '3 → 6 → 12' },
+    { type: 'crossword', prompt: 'Solve the coding crossword', words: [
+      { answer: 'CODE', row: 0, col: 0, dir: 'across', clue: 'Instructions written for a computer' },
+      { answer: 'CPU', row: 0, col: 0, dir: 'down', clue: 'The brain of the computer' },
+      { answer: 'DATA', row: 0, col: 2, dir: 'down', clue: 'Facts and numbers a computer stores' },
+    ], explain: 'Code runs on the CPU and works with data' },
+    { type: 'crossword', prompt: 'Solve the coding crossword', words: [
+      { answer: 'BUG', row: 0, col: 0, dir: 'across', clue: 'A mistake in a program' },
+      { answer: 'BIT', row: 0, col: 0, dir: 'down', clue: 'The smallest piece of data: a 0 or a 1' },
+      { answer: 'GAME', row: 0, col: 2, dir: 'down', clue: 'Many coders start by building one for fun' },
+    ], explain: 'Finding and fixing bugs is called debugging' },
   ]},
   { zone: 'forge', name: 'Forge Chest', sprite: 'chestBody', bonus: true, difficulty: 'hard', variants: [
     { type: 'robot', prompt: 'Master maze! Reach the ⭐', size: 5, start: [0, 0], goal: [4, 4], walls: [[1, 0], [1, 1], [1, 2], [3, 4], [3, 3], [3, 2], [2, 4]], max: 12, explain: 'Great coding!' },
@@ -163,16 +171,24 @@ export const ENEMIES = [
     { prompt: 'Best way to use AI for board exam revision? 📚', choices: ['Ask it to quiz you on a chapter', 'Copy its answers in the exam', 'Ask it to guess the paper', 'Skip studying'], answer: 'Ask it to quiz you on a chapter', explain: 'Use AI as a study buddy' },
   ]},
   { zone: 'heart', name: 'Mirage Mind', sprite: 'mage', palette: 'heart', difficulty: 'medium', variants: [
-    { type: 'sort', prompt: 'Is it a sign of an AI-made photo?', labels: ['Normal', 'AI sign'], items: [['Six fingers on a hand', 'AI sign'], ['Natural shadows', 'Normal'], ['Melted, unreadable text', 'AI sign'], ['A photo you took yourself', 'Normal']], explain: 'Hands and text often look odd in AI images' },
-    { type: 'sort', prompt: 'Is it a sign of an AI-made photo?', labels: ['Normal', 'AI sign'], items: [['Earrings that do not match', 'AI sign'], ['A real place you know', 'Normal'], ['Too-smooth plastic skin', 'AI sign'], ['Normal blurry background', 'Normal']], explain: 'Look closely at small details' },
+    { type: 'fill', prompt: 'Fill in the blanks', text: 'AI learns patterns from lots of ___. A fake AI-made video is called a ___.', answers: ['data', 'deepfake'], bank: ['data', 'deepfake', 'magic', 'virus'], explain: 'Always check where a shocking video came from' },
+    { type: 'fill', prompt: 'Fill in the blanks', text: 'A good AI prompt is ___. AI can sometimes be ___, so check important facts.', answers: ['specific', 'wrong'], bank: ['specific', 'wrong', 'short', 'perfect'], explain: 'Clear prompts in, better answers out' },
   ]},
   { zone: 'heart', name: 'Train Bot', sprite: 'robot', palette: 'heart', difficulty: 'medium', variants: [
     { type: 'match', prompt: 'Match the app to what its AI does', pairs: [['Google Maps', 'Predicts traffic'], ['YouTube', 'Suggests videos'], ['Google Lens', 'Reads text in photos'], ['Gmail', 'Blocks spam']], explain: 'AI is already in apps you use daily' },
     { type: 'match', prompt: 'Match the app to what its AI does', pairs: [['Instagram', 'Face filters'], ['Swiggy', 'Delivery time guess'], ['Keyboard', 'Next-word suggestion'], ['Spotify', 'Song picks for you']], explain: 'AI is already in apps you use daily' },
   ]},
   { zone: 'heart', name: 'Deepfake Djinn', sprite: 'robot', palette: 'heart', difficulty: 'hard', guardian: true, variants: [
-    { prompt: 'A chatbot tells you a "fact" that sounds wrong. You…', choices: ['Check a trusted source', 'Believe it', 'Share it everywhere', 'Argue with it'], answer: 'Check a trusted source', explain: 'AI can be confidently wrong' },
-    { prompt: 'A "deepfake" is…', choices: ['A fake AI video or voice', 'A deep pool', 'A broken file', 'A strong password'], answer: 'A fake AI video or voice', explain: 'Check the source of shocking videos' },
+    { type: 'crossword', prompt: 'Solve the AI crossword', words: [
+      { answer: 'ROBOT', row: 0, col: 0, dir: 'across', clue: 'A machine that can do tasks by itself' },
+      { answer: 'BOT', row: 0, col: 2, dir: 'down', clue: 'Short for robot, as in chat___' },
+      { answer: 'TEXT', row: 0, col: 4, dir: 'down', clue: 'What a chatbot writes back to you' },
+    ], explain: 'Chatbots are AI that write text' },
+    { type: 'crossword', prompt: 'Solve the AI crossword', words: [
+      { answer: 'DATA', row: 0, col: 0, dir: 'across', clue: 'AI learns from lots of this' },
+      { answer: 'APP', row: 0, col: 1, dir: 'down', clue: 'Software on your phone' },
+      { answer: 'ALEXA', row: 0, col: 3, dir: 'down', clue: "Amazon's voice assistant" },
+    ], explain: 'Voice assistants are AI you can talk to' },
   ]},
   { zone: 'heart', name: 'Heart Chest', sprite: 'chestBody', bonus: true, difficulty: 'hard', variants: [
     { type: 'bits', prompt: 'Computers think in bits! Make 29', bits: [16, 8, 4, 2, 1], target: 29, explain: '16 + 8 + 4 + 1 = 29 → 11101' },
