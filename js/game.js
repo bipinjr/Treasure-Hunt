@@ -676,6 +676,10 @@ function feedbackForm() {
   let sent = false;
   try { sent = !!localStorage.getItem(fbKey()); } catch {}
   if (sent) return '<div class="feedback done"><p>✔ Thanks for your feedback!</p></div>';
+  const chips = (k, label, opts) => `
+    <fieldset class="fb-q"><legend>${label}</legend>
+      <div class="chips">${opts.map(v => `<label><input type="radio" name="${k}" value="${esc(v)}"><span>${esc(v)}</span></label>`).join('')}</div>
+    </fieldset>`;
   const stars = (k, label, req) => `
     <fieldset class="fb-q"><legend>${label}${req ? ' <span class="req">*</span>' : ''}</legend>
       <div class="stars" role="radiogroup">${[5, 4, 3, 2, 1].map(n => `<label><input type="radio" name="${k}" value="${n}" ${req ? 'required' : ''}><span aria-hidden="true">★</span><span class="sr">${n} out of 5</span></label>`).join('')}</div>
@@ -686,6 +690,13 @@ function feedbackForm() {
       ${FB_STARS.map(([k, l, r]) => stars(k, l, r)).join('')}
       <fieldset class="fb-q"><legend>Would you consider studying BCA at our college?</legend>
         <div class="chips">${['Yes', 'Maybe', 'No'].map(v => `<label><input type="radio" name="interest" value="${v}"><span>${v}</span></label>`).join('')}</div>
+      </fieldset>
+      <h4 class="fb-sub">About you</h4>
+      ${chips('stream', 'Which stream are you in?', ['Science', 'Commerce', 'Arts', 'Other'])}
+      ${chips('pu_year', 'Which year are you in?', ['1st PU', '2nd PU'])}
+      ${chips('plan', 'What do you plan to study after PU?', ['BCA', 'BCom / BBA', 'BSc', 'Engineering', 'Other', 'Not decided'])}
+      <fieldset class="fb-q"><legend>Your college name <span class="opt">(optional)</span></legend>
+        <input class="fb-text" name="college" maxlength="120" autocomplete="off" placeholder="e.g. KLE PU College">
       </fieldset>
       <fieldset class="fb-q"><legend>Any suggestions for the organisers or the college? <span class="opt">(optional)</span></legend>
         <textarea name="comment" maxlength="500" rows="2" placeholder="What did you like? What should we do better next time?"></textarea>
@@ -703,11 +714,22 @@ function bindFeedback() {
     if (!d.get('overall') || !d.get('event')) { msg.textContent = 'Please rate the overall experience and the BCA event.'; return; }
     f.querySelector('button').disabled = true; msg.textContent = 'Sending…';
     const num = k => d.get(k) ? +d.get(k) : null;
-    const { error } = await sb.rpc('submit_feedback', { p_id: cred.id, p_token: cred.token, p_overall: num('overall'), p_event: num('event'), p_organisation: num('organisation'), p_organisers: num('organisers'), p_interest: d.get('interest') || '', p_comment: d.get('comment') || '' });
+    const { error } = await sb.rpc('submit_feedback', { p_id: cred.id, p_token: cred.token, p_overall: num('overall'), p_event: num('event'), p_organisation: num('organisation'), p_organisers: num('organisers'), p_interest: d.get('interest') || '', p_comment: d.get('comment') || '',
+      p_stream: d.get('stream') || '', p_pu_year: d.get('pu_year') || '', p_plan: d.get('plan') || '', p_college: d.get('college') || '' });
     if (error) { f.querySelector('button').disabled = false; msg.textContent = 'Could not send. Check the internet and try again.'; return; }
     try { localStorage.setItem(fbKey(), '1'); } catch {}
     f.outerHTML = '<div class="feedback done"><p>✔ Thanks for your feedback!</p></div>';
     sfx.coin();
+  };
+}
+
+// Shared PCs: hand the computer to the next student (their score stays saved on the server)
+const nextPlayerBtn = () => '<div class="row" style="justify-content:center;margin-top:18px"><button class="btn" id="next-player">🏠 Back to home · next player</button></div>';
+function bindNextPlayer() {
+  $('next-player').onclick = () => {
+    if (!confirm('Finish and hand this PC to the next player? Your score is already saved.')) return;
+    localStorage.removeItem(KEY);
+    location.reload();
   };
 }
 
@@ -724,8 +746,9 @@ function victory() {
     </div>
     <div class="clue"><small>YOUR NEXT CLUE</small>${esc(ev?.clue || '')}</div>
     ${stats()}
-    ${feedbackForm()}`;
-  bindFeedback();
+    ${feedbackForm()}
+    ${nextPlayerBtn()}`;
+  bindFeedback(); bindNextPlayer();
   setTimeout(() => { $('chest')?.classList.add('open'); confetti($('confetti')); sfx.victory(); }, 700);
   // keep rank fresh while they celebrate
   clearInterval(endTimer);
@@ -743,8 +766,9 @@ function timeUp() {
     <h2 class="title">THE CAVERN SEALS SHUT</h2>
     <p class="sub" style="color:var(--muted);font-size:20px">You fought bravely, ${esc(me.name)}. Here is how far you got:</p>
     ${stats()}
-    ${feedbackForm()}`;
-  bindFeedback();
+    ${feedbackForm()}
+    ${nextPlayerBtn()}`;
+  bindFeedback(); bindNextPlayer();
   clearInterval(endTimer);
   endTimer = setInterval(async () => {
     if (!cred) return;

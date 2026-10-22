@@ -10,7 +10,7 @@ Live: https://treasure-hunt-seven-sigma.vercel.app/
 | `/leaderboard` | Projector: live podium + rankings + countdown |
 | `/admin` | Organiser: start/end/reset round, clue, ± time, remove players, CSV export |
 
-Admin password: `bcaquest` (change it in the admin page, under "Change password").
+Admin password: ask the organisers (change it in the admin page, under "Change password"). Never commit it to this repo.
 
 ## Run locally
 ```bash

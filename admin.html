@@ -79,7 +79,7 @@
         <h3>Players <span class="muted-small" id="shown"></span></h3>
         <div class="row">
           <input class="field" id="search" type="search" placeholder="Search a name" aria-label="Search players" style="min-width:180px;font-size:16px;padding:10px 12px">
-          <button class="btn ghost" id="export" style="font-size:11px;padding:10px 14px">⬇ CSV</button>
+          <button class="btn ghost" id="export" style="font-size:11px;padding:10px 14px">⬇ Excel</button>
           <button class="btn ghost" id="pdf" style="font-size:11px;padding:10px 14px">⬇ PDF</button>
         </div>
       </div>
@@ -96,14 +96,14 @@
       <div class="row" style="justify-content:space-between">
         <h3>Player feedback <span class="muted-small" id="fb-count"></span></h3>
         <div class="row">
-          <button class="btn ghost" id="fb-export" style="font-size:11px;padding:10px 14px">⬇ Feedback CSV</button>
+          <button class="btn ghost" id="fb-export" style="font-size:11px;padding:10px 14px">⬇ Feedback Excel</button>
           <button class="btn ghost" id="fb-clear" style="font-size:11px;padding:10px 14px;color:var(--red)">Clear feedback</button>
         </div>
       </div>
       <div class="ledger fb-ledger" id="fb-summary"></div>
       <div class="table-scroll">
         <table class="admin-table">
-          <thead><tr><th>Player</th><th>Overall experience</th><th>BCA event</th><th>Organisation</th><th>Organisers</th><th>Would study BCA here?</th><th>Suggestion</th><th>Sent</th></tr></thead>
+          <thead><tr><th>Player</th><th>Overall experience</th><th>BCA event</th><th>Organisation</th><th>Organisers</th><th>Would study BCA here?</th><th>Stream</th><th>Year</th><th>Plan after PU</th><th>College</th><th>Suggestion</th><th>Sent</th></tr></thead>
           <tbody id="fb-rows"></tbody>
         </table>
       </div>
@@ -268,7 +268,22 @@
     }
     $('search').oninput = render;
 
-    // Export rows shared by CSV and PDF
+    // Excel export: SheetJS is loaded only when an export button is pressed
+    let XLSX = null;
+    async function downloadXlsx(file, sheets) {
+      XLSX ||= await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm');
+      const wb = XLSX.utils.book_new();
+      for (const [name, rows] of sheets) {
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const keys = Object.keys(rows[0] || { '': '' });
+        ws['!cols'] = keys.map(k => ({ wch: Math.min(48, Math.max(k.length, ...rows.map(r => String(r[k] ?? '').length)) + 2) }));
+        XLSX.utils.book_append_sheet(wb, ws, name);
+      }
+      XLSX.writeFile(wb, `${file}-${stamp()}.xlsx`);
+    }
+    const when = t => t ? new Date(t).toLocaleString() : '';
+
+    // Export rows shared by Excel and PDF
     function exportRows() {
       return rank(players).map((p, i) => ({
         rank: i + 1, name: p.name, status: p.finished_at ? 'Finished' : 'Not finished', where: zoneLabel(p),
@@ -279,15 +294,28 @@
     }
     const stamp = () => new Date().toISOString().slice(0, 16).replace(':', '');
 
-    $('export').onclick = () => {
-      const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-      const head = ['Rank', 'Name', 'Status', 'Where', 'Checkpoints', 'Boss HP', 'Correct', 'Wrong', 'Bonus chests', 'Bonus (s)', 'Penalty (s)', 'Tab strikes', 'Restarts', 'Time', 'Total ms', 'Joined', 'Finished'];
-      const lines = [head].concat(exportRows().map(Object.values));
-      const blob = new Blob(['﻿' + lines.map(l => l.map(cell).join(',')).join('\r\n')], { type: 'text/csv' });
-      const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `cavern-of-code-results-${stamp()}.csv` });
-      a.click();
-      URL.revokeObjectURL(a.href);
-      msg('CSV downloaded.');
+    $('export').onclick = async () => {
+      const rows = exportRows().map(r => {
+        const p = players.find(x => x.name === r.name), answered = (p?.correct || 0) + (p?.wrong || 0);
+        return {
+          'Rank': r.rank, 'Name': r.name, 'Status': r.status, 'Where': r.where, 'Checkpoints': r.checkpoints,
+          'Total time (mm:ss)': r.time, 'Correct': r.correct, 'Wrong': r.wrong, 'Accuracy %': answered ? Math.round(r.correct / answered * 100) : 0,
+          'Bonus chests': r.bonus, 'Bonus (sec off)': r.bonusSec, 'Penalty (sec added)': r.penaltySec, 'Boss HP left': r.bossHp,
+          'Tab strikes': r.strikes, 'Restarts': r.restarts, 'Joined': when(r.joined), 'Finished': when(r.finished),
+        };
+      });
+      const fin = rows.filter(r => r.Status === 'Finished');
+      const summary = [
+        { 'Item': 'Exported at', 'Value': new Date().toLocaleString() },
+        { 'Item': 'Round status', 'Value': eventPhase(ev) },
+        { 'Item': 'Players joined', 'Value': rows.length },
+        { 'Item': 'Players finished', 'Value': fin.length },
+        { 'Item': 'Winner', 'Value': fin[0] ? `${fin[0].Name} (${fin[0]['Total time (mm:ss)']})` : '—' },
+        { 'Item': 'Bonus chests won', 'Value': rows.reduce((a, r) => a + r['Bonus chests'], 0) },
+        { 'Item': 'Players with tab strikes', 'Value': rows.filter(r => r['Tab strikes'] || r.Restarts).length },
+      ];
+      try { await downloadXlsx('cavern-of-code-results', [['Leaderboard', rows.length ? rows : [{ 'Rank': '', 'Name': 'No players yet' }]], ['Summary', summary]]); msg('Excel file downloaded.'); }
+      catch { msg('Could not create the Excel file. Check the internet and try again.', true); }
     };
 
     // shortcut: PDF comes from the browser's print dialog (choose "Save as PDF"); no PDF library needed
@@ -323,21 +351,22 @@
         ['Responses', feedback.length], ['Overall experience', `${avg('overall')} / 5`], ['BCA event', `${avg('event_rating')} / 5`],
         ['Organisation', `${avg('organisation')} / 5`], ['Organisers', `${avg('organisers')} / 5`],
         ['Would study BCA here: yes', cnt('Yes')], ['Maybe', cnt('Maybe')], ['No', cnt('No')],
+        ['Plan BCA after PU', feedback.filter(f => f.plan === 'BCA').length],
       ].map(([l, v]) => `<div><b>${v}</b><span>${l}</span></div>`).join('');
       $('fb-rows').innerHTML = feedback.length ? feedback.map(f => `<tr>
         <td class="pname">${esc(f.name)}</td><td class="stars-txt">${starsTxt(f.overall)}</td><td class="stars-txt">${starsTxt(f.event_rating)}</td><td class="stars-txt">${starsTxt(f.organisation)}</td><td class="stars-txt">${starsTxt(f.organisers)}</td>
-        <td>${f.interest || '–'}</td><td class="fb-comment">${f.comment ? esc(f.comment) : '–'}</td><td>${new Date(f.created_at).toLocaleTimeString()}</td></tr>`).join('')
-        : '<tr><td colspan="8" class="empty-row">No feedback yet. It appears here as players finish.</td></tr>';
+        <td>${f.interest || '–'}</td><td>${esc(f.stream || '–')}</td><td>${esc(f.pu_year || '–')}</td><td>${esc(f.plan || '–')}</td><td>${esc(f.college || '–')}</td><td class="fb-comment">${f.comment ? esc(f.comment) : '–'}</td><td>${new Date(f.created_at).toLocaleTimeString()}</td></tr>`).join('')
+        : '<tr><td colspan="12" class="empty-row">No feedback yet. It appears here as players finish.</td></tr>';
     }
-    $('fb-export').onclick = () => {
-      const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-      const lines = [['Name', 'Overall experience (1-5)', 'BCA Tech Quest event (1-5)', 'Event organisation (1-5)', 'Organisers & volunteers (1-5)', 'Would consider BCA at this college', 'Suggestion', 'Sent at']]
-        .concat(feedback.map(f => [f.name, f.overall, f.event_rating, f.organisation ?? '', f.organisers ?? '', f.interest ?? '', f.comment ?? '', f.created_at]));
-      const blob = new Blob(['﻿' + lines.map(l => l.map(cell).join(',')).join('\r\n')], { type: 'text/csv' });
-      const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `cavern-of-code-feedback-${stamp()}.csv` });
-      a.click();
-      URL.revokeObjectURL(a.href);
-      msg('Feedback CSV downloaded.');
+    $('fb-export').onclick = async () => {
+      const rows = feedback.map(f => ({
+        'Name': f.name, 'Overall experience (1-5)': f.overall, 'BCA Tech Quest event (1-5)': f.event_rating,
+        'Event organisation (1-5)': f.organisation ?? '', 'Organisers & volunteers (1-5)': f.organisers ?? '',
+        'Would consider BCA at this college': f.interest ?? '', 'Stream': f.stream ?? '', 'PU year': f.pu_year ?? '',
+        'Plan after PU': f.plan ?? '', 'College': f.college ?? '', 'Suggestion': f.comment ?? '', 'Sent at': when(f.created_at),
+      }));
+      try { await downloadXlsx('cavern-of-code-feedback', [['Feedback', rows.length ? rows : [{ 'Name': 'No feedback yet' }]]]); msg('Feedback Excel file downloaded.'); }
+      catch { msg('Could not create the Excel file. Check the internet and try again.', true); }
     };
     $('fb-clear').onclick = async () => {
       if (confirm('Delete ALL feedback? Export the feedback CSV first. This cannot be undone.') && await call('admin_clear_feedback')) { msg('Feedback cleared.'); refreshFeedback(); }

@@ -13,7 +13,7 @@
   --gold: #f2c14e;
   --gold-2: #ffdf8a;
   --text: #f4eddc;
-  --muted: #a8a093;
+  --muted: #cfc7b8;
   --red: #ff4d5e;
   --green: #3ddc84;
   --accent: #5b8def;
@@ -29,7 +29,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--body);
-  font-size: 18px;
+  font-size: 19px;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
@@ -349,7 +349,7 @@ button { cursor: pointer; }
   transform-origin: top; animation: unroll .8s 1s var(--ease-out) both; }
 @keyframes unroll { from { transform: scaleY(0); opacity: 0; } }
 .clue small { display: block; font-family: var(--display); font-size: 11px; letter-spacing: 2px; color: #8b5a2b; margin-bottom: 8px; }
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 10px 0 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 10px 0 0; }
 .stat { padding: 14px 8px; border-radius: 10px; background: rgba(0,0,0,.35); border: 1px solid var(--line); }
 .stat .v { font-family: var(--display); font-size: 20px; color: var(--gold); }
 .stat .l { font-size: 14px; color: var(--muted); margin-top: 6px; }
@@ -596,3 +596,30 @@ body.practice .stage::after { content: 'PRACTICE'; position: absolute; top: 12px
 .fb-ledger { padding: 12px 0; background: none; border: 0; box-shadow: none; }
 .admin-table .stars-txt { color: var(--gold); letter-spacing: 1px; white-space: nowrap; }
 .admin-table .fb-comment { max-width: 340px; white-space: normal; }
+
+/* ---------- Readability for students: nothing below ~15px, brighter secondary text ---------- */
+.kicker { font-size: 13px; }
+.zone-domain { font-size: 15px; }
+.timer .lbl { font-size: 14px; }
+.timer .pen { font-size: 15px; }
+.nameplate .n { font-size: 14px; }
+.nameplate .d { font-size: 15px; }
+.prompt { font-size: clamp(22px, 1.9vw, 30px); line-height: 1.4; }
+.choice { font-size: clamp(18px, 1.4vw, 22px); }
+.explain { font-size: 19px; }
+.guide ul { font-size: clamp(18px, 1.45vw, 22px); }
+.stat .l { font-size: 16px; }
+.stat .v { font-size: 22px; }
+.lb li { font-size: 17px; }
+.lb .tm { font-size: 12px; }
+.my-rank { font-size: 16px; }
+.how div { font-size: 16px; }
+.rules { font-size: 17px; }
+.rules-list { font-size: 18px; }
+.hero .sub { font-size: 21px; }
+.chip { font-size: 16px; }
+.fb-q legend { font-size: 18px; }
+.fb-sub { margin: 6px 0 0; font-family: var(--display); font-size: 12px; color: var(--gold); letter-spacing: 1px; }
+.fb-text { width: 100%; padding: 10px 12px; font: inherit; font-size: 17px; color: var(--text); background: rgba(0,0,0,.4); border: 1px solid var(--line); border-radius: 8px; }
+.chips { flex-wrap: wrap; }
+.muted-small { font-size: 15px; }
