@@ -23,7 +23,7 @@
       <div class="hero-art" id="hero-art"></div>
       <h1 class="title">CAVERN<br>OF CODE</h1>
       <p class="sub">4 zones · 24 monsters · 4 bonus chests. Defeat The Summarizer and claim the treasure.</p>
-      <form id="join" class="panel join" autocomplete="off">
+      <form id="join" class="panel join" autocomplete="off" onsubmit="return false">
         <input id="name" class="field" maxlength="40" placeholder="Enter your full name" aria-label="Your name" required>
         <button class="btn" id="join-btn" type="submit">⚔ ENTER THE CAVERN</button>
         <button class="btn ghost" id="practice-btn" type="button">🛡 Try a quick practice run</button>
@@ -60,7 +60,7 @@
   <!-- Rules: must be accepted before joining -->
   <section id="s-rules" class="screen" hidden>
     <div class="torch l"></div><div class="torch r"></div>
-    <form class="panel rules-card" id="rules-form">
+    <form class="panel rules-card" id="rules-form" onsubmit="return false">
       <div class="kicker">Before you enter</div>
       <h2 class="title">RULES OF THE CAVERN</h2>
       <p class="rules-who">Playing as <b id="rules-name"></b></p>
