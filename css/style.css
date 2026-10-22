@@ -78,7 +78,7 @@ button { cursor: pointer; }
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 4px 0 #3a2208) drop-shadow(0 0 24px rgba(242,193,78,.35));
 }
-.kicker { font-family: var(--display); font-size: 12px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
+.kicker { font-family: var(--display); font-size: 12px; line-height: 1.9; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
 
 .btn {
   position: relative;

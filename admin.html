@@ -145,7 +145,7 @@
     $('start').onclick = async () => {
       const m = Math.max(1, Math.min(120, parseInt($('mins').value, 10) || 20));
       if (eventPhase(ev) === 'running' && !confirm('A round is running. Restart the clock from now?')) return;
-      if (await call('admin_start', { minutes: m })) { msg(`Round started: ${m} minutes. Good luck, adventurers!`); refresh(); }
+      if (await call('admin_start', { minutes: m })) { msg(`Round started: ${m} minute${m === 1 ? "" : "s"}. Good luck, adventurers!`); refresh(); }
     };
     $('end').onclick = async () => { if (confirm('End the round now for everyone?') && await call('admin_end')) { msg('Round ended.'); refresh(); } };
     $('reset').onclick = async () => {
