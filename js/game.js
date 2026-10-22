@@ -665,7 +665,12 @@ function practiceEnd(won) {
 }
 
 // ---------- feedback (real runs only) ----------
-const FB_STARS = [['overall', 'How is the overall experience?', true], ['fun', 'How fun was the game?'], ['clarity', 'How clear were the questions and zone guides?'], ['event', 'How was your overall experience of the BCA Tech Quest event?', true]];
+const FB_STARS = [
+  ['overall', 'How is the overall experience?', true],
+  ['event', 'How was the BCA Tech Quest event overall?', true],
+  ['organisation', 'How well was the event organised (timing, venue, instructions)?'],
+  ['organisers', 'How helpful and friendly were the organisers and volunteers?'],
+];
 const fbKey = () => 'tq_fb_' + cred?.id;
 function feedbackForm() {
   let sent = false;
@@ -677,13 +682,13 @@ function feedbackForm() {
     </fieldset>`;
   return `
     <form class="feedback" id="feedback">
-      <h3>Tell us what you thought</h3>
+      <h3>Help us make the next Tech Quest better</h3>
       ${FB_STARS.map(([k, l, r]) => stars(k, l, r)).join('')}
-      <fieldset class="fb-q"><legend>Did this make you more interested in computer science / BCA?</legend>
+      <fieldset class="fb-q"><legend>Would you consider studying BCA at our college?</legend>
         <div class="chips">${['Yes', 'Maybe', 'No'].map(v => `<label><input type="radio" name="interest" value="${v}"><span>${v}</span></label>`).join('')}</div>
       </fieldset>
-      <fieldset class="fb-q"><legend>What should we improve? <span class="opt">(optional)</span></legend>
-        <textarea name="comment" maxlength="500" rows="2" placeholder="Anything you liked or didn't like"></textarea>
+      <fieldset class="fb-q"><legend>Any suggestions for the organisers or the college? <span class="opt">(optional)</span></legend>
+        <textarea name="comment" maxlength="500" rows="2" placeholder="What did you like? What should we do better next time?"></textarea>
       </fieldset>
       <button class="btn" type="submit">Send feedback</button>
       <p class="fb-msg" role="status"></p>
@@ -698,7 +703,7 @@ function bindFeedback() {
     if (!d.get('overall') || !d.get('event')) { msg.textContent = 'Please rate the overall experience and the BCA event.'; return; }
     f.querySelector('button').disabled = true; msg.textContent = 'Sending…';
     const num = k => d.get(k) ? +d.get(k) : null;
-    const { error } = await sb.rpc('submit_feedback', { p_id: cred.id, p_token: cred.token, p_overall: num('overall'), p_fun: num('fun'), p_clarity: num('clarity'), p_interest: d.get('interest') || '', p_comment: d.get('comment') || '', p_event: num('event') });
+    const { error } = await sb.rpc('submit_feedback', { p_id: cred.id, p_token: cred.token, p_overall: num('overall'), p_event: num('event'), p_organisation: num('organisation'), p_organisers: num('organisers'), p_interest: d.get('interest') || '', p_comment: d.get('comment') || '' });
     if (error) { f.querySelector('button').disabled = false; msg.textContent = 'Could not send. Check the internet and try again.'; return; }
     try { localStorage.setItem(fbKey(), '1'); } catch {}
     f.outerHTML = '<div class="feedback done"><p>✔ Thanks for your feedback!</p></div>';
