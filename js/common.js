@@ -61,8 +61,8 @@ export async function fetchEvent() {
   const { data } = await sb.from('event_state').select('*').eq('id', 1).single();
   return data;
 }
-export async function fetchPlayers() {
-  const { data } = await sb.from('players').select('*');
+export async function fetchPlayers(cols = '*') {
+  const { data } = await sb.from('players').select(cols);
   return data || [];
 }
 

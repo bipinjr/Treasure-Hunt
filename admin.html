@@ -85,7 +85,7 @@
       </div>
       <div class="table-scroll">
         <table class="admin-table">
-          <thead><tr><th>#</th><th>Status</th><th>Player</th><th>Where</th><th>Progress</th><th>Right</th><th>Wrong</th><th>Bonus</th><th>Penalty</th><th>Time</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Status</th><th>Player</th><th>Where</th><th>Progress</th><th>Right</th><th>Wrong</th><th>Bonus</th><th>Penalty</th><th>Tab strikes</th><th>Time</th><th></th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
@@ -184,10 +184,11 @@
           <td class="num">${p.correct}</td><td class="num">${p.wrong}</td>
           <td class="num">${p.bonus_count ? `⭐${p.bonus_count} (−${p.bonus_sec}s)` : '–'}</td>
           <td class="num">${p.penalty_sec ? `+${p.penalty_sec}s` : '–'}</td>
+          <td class="num ${p.tab_strikes >= 2 || p.restarts ? 'warn' : ''}">${p.tab_strikes}/3${p.restarts ? ` · ${p.restarts}× restarted` : ''}</td>
           <td class="num ${p.finished_at ? 'fin' : ''}">${t == null ? '–' : fmt(t)}</td>
           <td style="white-space:nowrap"><button class="adj" data-id="${p.id}" data-n="${esc(p.name)}">± Time</button>
             <button class="del" data-id="${p.id}" data-n="${esc(p.name)}">Remove</button></td></tr>`;
-      }).join('') : `<tr><td colspan="11" class="empty-row">${q ? 'No player matches that name.' : 'No players yet. Share the game link and ask everyone to enter their name.'}</td></tr>`;
+      }).join('') : `<tr><td colspan="12" class="empty-row">${q ? 'No player matches that name.' : 'No players yet. Share the game link and ask everyone to enter their name.'}</td></tr>`;
       $('rows').querySelectorAll('.sel').forEach(b => b.onclick = () => { selected = b.dataset.id; render(); $('scorecard').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
       [...$('rows').children].forEach(tr => tr.classList.toggle('picked', !!tr.querySelector(`.sel[data-id="${selected}"]`)));
       renderCard();
@@ -232,6 +233,9 @@
         <div class="sc-facts">
           <span>Accuracy <b>${answered ? Math.round(p.correct / answered * 100) : 0}%</b></span>
           <span>Right <b>${p.correct}</b></span>
+          <span>Tab strikes <b class="${p.tab_strikes >= 2 ? 'warn' : ''}">${p.tab_strikes}/3</b></span>
+          <span>Restarts <b class="${p.restarts ? 'warn' : ''}">${p.restarts}</b></span>
+          ${p.attempt ? '<span><b class="warn">On last try</b></span>' : ''}
           <span>Joined <b>${new Date(p.created_at).toLocaleTimeString()}</b></span>
           <span>${p.finished_at ? `Finished <b>${new Date(p.finished_at).toLocaleTimeString()}</b>` : `Started <b>${start ? new Date(start).toLocaleTimeString() : 'waiting'}</b>`}</span>
         </div>`;
@@ -251,7 +255,7 @@
       return rank(players).map((p, i) => ({
         rank: i + 1, name: p.name, status: p.finished_at ? 'Finished' : 'Not finished', where: zoneLabel(p),
         checkpoints: `${Math.min(p.stage, TOTAL_STAGES)}/${TOTAL_STAGES}`, bossHp: p.boss_hp, correct: p.correct, wrong: p.wrong,
-        bonus: p.bonus_count, bonusSec: p.bonus_sec, penaltySec: p.penalty_sec,
+        bonus: p.bonus_count, bonusSec: p.bonus_sec, penaltySec: p.penalty_sec, strikes: p.tab_strikes, restarts: p.restarts,
         time: liveMs(p) == null ? '' : fmt(liveMs(p)), totalMs: p.total_ms ?? '', joined: p.created_at, finished: p.finished_at ?? '',
       }));
     }
@@ -259,7 +263,7 @@
 
     $('export').onclick = () => {
       const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-      const head = ['Rank', 'Name', 'Status', 'Where', 'Checkpoints', 'Boss HP', 'Correct', 'Wrong', 'Bonus chests', 'Bonus (s)', 'Penalty (s)', 'Time', 'Total ms', 'Joined', 'Finished'];
+      const head = ['Rank', 'Name', 'Status', 'Where', 'Checkpoints', 'Boss HP', 'Correct', 'Wrong', 'Bonus chests', 'Bonus (s)', 'Penalty (s)', 'Tab strikes', 'Restarts', 'Time', 'Total ms', 'Joined', 'Finished'];
       const lines = [head].concat(exportRows().map(Object.values));
       const blob = new Blob(['﻿' + lines.map(l => l.map(cell).join(',')).join('\r\n')], { type: 'text/csv' });
       const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `cavern-of-code-results-${stamp()}.csv` });
@@ -277,8 +281,8 @@
         <p>Tech Quest · BCA Department · ${new Date().toLocaleString()}</p>
         <p>${rows.length} players · ${fin} finished · round ${eventPhase(ev)}</p>
         <table>
-          <thead><tr><th>Rank</th><th>Name</th><th>Status</th><th>Checkpoints</th><th>Right</th><th>Wrong</th><th>Bonus</th><th>Penalty</th><th>Time</th></tr></thead>
-          <tbody>${rows.map(r => `<tr class="${r.rank <= 3 ? 'top' : ''}"><td>${r.rank}</td><td>${esc(r.name)}</td><td>${r.status}</td><td>${r.checkpoints}</td><td>${r.correct}</td><td>${r.wrong}</td><td>${r.bonus ? `${r.bonus} (−${r.bonusSec}s)` : '–'}</td><td>${r.penaltySec ? `+${r.penaltySec}s` : '–'}</td><td>${r.time || '–'}</td></tr>`).join('')}</tbody>
+          <thead><tr><th>Rank</th><th>Name</th><th>Status</th><th>Checkpoints</th><th>Right</th><th>Wrong</th><th>Bonus</th><th>Penalty</th><th>Strikes</th><th>Time</th></tr></thead>
+          <tbody>${rows.map(r => `<tr class="${r.rank <= 3 ? 'top' : ''}"><td>${r.rank}</td><td>${esc(r.name)}</td><td>${r.status}</td><td>${r.checkpoints}</td><td>${r.correct}</td><td>${r.wrong}</td><td>${r.bonus ? `${r.bonus} (−${r.bonusSec}s)` : '–'}</td><td>${r.penaltySec ? `+${r.penaltySec}s` : '–'}</td><td>${r.strikes}/3${r.restarts ? ` (${r.restarts}× restart)` : ''}</td><td>${r.time || '–'}</td></tr>`).join('')}</tbody>
         </table>
         <p class="foot">Ranking: finished players by total time (time + penalties − bonuses; tie: fewer wrong, then earlier finish), then unfinished players by progress.</p>`;
       const old = document.title;

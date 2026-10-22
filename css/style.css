@@ -543,3 +543,29 @@ body.practice .stage::after { content: 'PRACTICE'; position: absolute; top: 12px
 .admin-table .sel:hover { color: var(--gold); }
 .admin-table tr.picked td { background: rgba(242,193,78,.08); }
 @media (max-width: 1000px) { .monitor { grid-template-columns: 1fr; } .sc-time { grid-template-columns: repeat(2, 1fr); } }
+
+/* ---------- Rules, attempts, tab strikes ---------- */
+.rules-card { width: min(760px, 100%); padding: 28px 32px; display: grid; gap: 14px; }
+.rules-card .title { font-size: clamp(18px, 2.2vw, 26px); text-align: center; }
+.rules-card .kicker { text-align: center; }
+.rules-who { margin: 0; text-align: center; color: var(--muted); }
+.rules-who b { color: var(--gold); }
+.rules-list { margin: 0; padding-left: 24px; display: grid; gap: 9px; font-size: 17px; line-height: 1.4; }
+.rules-list li::marker { color: var(--gold); font-weight: 600; }
+.rules-list b { color: var(--gold-2); font-weight: 600; }
+.agree { display: flex; align-items: center; gap: 10px; justify-content: center; font-size: 17px; cursor: pointer; padding: 10px; border-radius: 10px; background: rgba(0,0,0,.3); border: 1px dashed var(--line); }
+.agree input { width: 22px; height: 22px; accent-color: var(--gold); }
+.rules-card .err { color: var(--red); text-align: center; min-height: 1.2em; margin: 0; }
+.choice.used { opacity: .55; }
+.qcard { user-select: none; -webkit-user-select: none; }
+.strikes { font-family: var(--display); font-size: 11px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: rgba(0,0,0,.35); color: var(--muted); white-space: nowrap; }
+.strikes.hot { color: var(--red); border-color: var(--red); animation: pulse 1s infinite; }
+.warn-modal { position: fixed; inset: 0; z-index: 95; display: grid; place-items: center; padding: 20px; background: rgba(10, 2, 4, .78); backdrop-filter: blur(4px); animation: fadeIn .25s; }
+.warn-box { width: min(520px, 100%); padding: 28px; text-align: center; display: grid; gap: 12px; border-color: var(--red); box-shadow: 0 0 0 4px rgba(0,0,0,.4), 0 0 60px rgba(255,77,94,.35); }
+.warn-box .warn-icon { font-size: 48px; }
+.warn-box h2 { margin: 0; font-family: var(--display); font-size: 18px; line-height: 1.5; color: var(--red); }
+.warn-box p { margin: 0; font-size: 18px; line-height: 1.45; }
+.warn-box .btn { justify-self: center; }
+.warn-box.restart h2 { color: #ff8a8a; }
+
+.admin-table td.warn, .sc-facts b.warn { color: var(--red); }

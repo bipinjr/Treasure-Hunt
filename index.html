@@ -31,12 +31,37 @@
       </form>
       <div class="rules">
         <span>✔ Correct: <b>monster falls</b></span>
-        <span>✘ Wrong: <b>+10 sec</b></span>
+        <span>✘ Wrong: <b>+10 sec</b> (2 tries)</span>
         <span>⭐ Bonus chest: <b>−20 sec</b></span>
         <span>⏱ Fastest time <b>wins</b></span>
       </div>
       <p class="organiser"><a href="admin.html">Organiser login</a></p>
     </div>
+  </section>
+
+  <!-- Rules: must be accepted before joining -->
+  <section id="s-rules" class="screen" hidden>
+    <div class="torch l"></div><div class="torch r"></div>
+    <form class="panel rules-card" id="rules-form">
+      <div class="kicker">Before you enter</div>
+      <h2 class="title">RULES OF THE CAVERN</h2>
+      <p class="rules-who">Playing as <b id="rules-name"></b></p>
+      <ol class="rules-list">
+        <li><b>Stay on this tab.</b> Switching tabs or minimising the window is a strike. <b>3 strikes</b> send you back to checkpoint 1: your bonuses are lost and the clock keeps running.</li>
+        <li><b>2 attempts per monster.</b> Every wrong attempt adds <b>+10 sec</b>. Miss twice and the monster escapes.</li>
+        <li><b>Bonus chests: 1 attempt.</b> Right takes <b>−20 sec</b> off your time. Wrong or skip costs nothing.</li>
+        <li><b>The boss:</b> pick easy, medium or hard for each question. A wrong answer adds +10 sec.</li>
+        <li><b>Play alone, one entry per person</b>, with your real name. No phones, Google or AI tools.</li>
+        <li><b>20 minutes.</b> Fastest total time wins (time + penalties − bonuses). Refreshing the page is safe: you continue where you left off.</li>
+        <li>Organisers can add penalties or remove players who break the rules. Their decision is final.</li>
+      </ol>
+      <label class="agree"><input type="checkbox" id="agree"> I have read the rules and agree to follow them</label>
+      <div class="row" style="justify-content:center">
+        <button class="btn ghost" type="button" id="rules-back">Back</button>
+        <button class="btn" type="submit" id="rules-go" disabled>⚔ AGREE &amp; ENTER</button>
+      </div>
+      <p class="err" id="rules-err" role="alert"></p>
+    </form>
   </section>
 
   <!-- Waiting room -->
@@ -53,7 +78,7 @@
       <div class="how">
         <div><b>1 · SLAY</b>24 monsters in 4 zones. Read each zone's guide, then click an answer or press 1–4.</div>
         <div><b>2 · BOSS</b>Pick easy, medium or hard hits to drain 100 HP.</div>
-        <div><b>3 · WIN</b>Fastest time wins. Wrong = +10 sec, bonus chest = −20 sec.</div>
+        <div><b>3 · WIN</b>Fastest time wins. 2 tries per monster, each miss +10 sec; bonus chest −20 sec. Stay on this tab!</div>
       </div>
     </div>
   </section>
@@ -68,6 +93,7 @@
       <div class="track" id="track" aria-label="Progress"></div>
       <div class="timers">
         <button class="btn ghost practice-only" id="exit-practice" style="padding:10px 12px;font-size:10px">EXIT PRACTICE</button>
+        <div class="strikes" id="strikes" title="Tab switches: 3 strikes send you back to checkpoint 1">👁 0/3</div>
         <button class="mute" id="mute" aria-label="Toggle sound" title="Toggle sound">🔊</button>
         <div class="hearts" id="hearts" aria-label="Hearts"></div>
         <div class="timer"><div class="lbl">Your time</div><div class="val" id="my-time">00:00</div><div class="pen" id="my-pen"></div></div>

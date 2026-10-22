@@ -22,6 +22,8 @@ let shownZone = null;
 let bossIntroDone = false;
 let results = [];       // per-stage 'ok' | 'miss', kept locally for the rune bar
 let endTimer = null;
+// players' screens only need what ranking and the side board use; keeps traffic low with 120 PCs polling
+const BOARD_COLS = 'id,name,stage,boss_hp,finished_at,total_ms,wrong,penalty_sec,bonus_sec,bonus_count';
 let streak = 0;
 let practice = false;   // local-only warm-up run: no server, not on the leaderboard
 let pev = null;         // practice event clock
@@ -49,7 +51,7 @@ addEventListener('keydown', sfx.unlock, { once: true });
 
 async function init() {
   await syncClock();
-  [ev, players] = await Promise.all([fetchEvent(), fetchPlayers()]);
+  [ev, players] = await Promise.all([fetchEvent(), fetchPlayers(BOARD_COLS)]);
   try { cred = JSON.parse(localStorage.getItem(KEY)); } catch { cred = null; }
   if (cred) {
     const { data, error } = await sb.rpc('get_player', { p_id: cred.id, p_token: cred.token });
@@ -57,7 +59,7 @@ async function init() {
   }
   sb.channel('ev').on('postgres_changes', { event: '*', schema: 'public', table: 'event_state' }, p => { ev = p.new; route(); }).subscribe();
   setInterval(async () => { const e = await fetchEvent(); if (e) { ev = e; route(); } }, 5000);
-  setInterval(refreshPlayers, 3000);
+  setInterval(refreshPlayers, 5000);
   setInterval(tick, 250);
   // presence heartbeat for the admin's "online now" view
   const ping = () => { if (cred && !practice && me && !me.finished_at) sb.rpc('ping', { p_id: cred.id, p_token: cred.token }); };
@@ -79,7 +81,7 @@ function saveResults() {
 }
 
 async function refreshPlayers() {
-  players = await fetchPlayers();
+  players = await fetchPlayers(BOARD_COLS);
   // admin reset deletes everyone: send this PC back to the name screen
   if (!practice && me && !players.some(p => p.id === me.id) && ev?.status === 'waiting') { forget(); clearInterval(endTimer); route(); return; }
   if (screen === 'lobby') renderLobby();
@@ -89,12 +91,12 @@ async function refreshPlayers() {
 function show(name) {
   if (screen === name) return;
   screen = name;
-  for (const s of ['name', 'lobby', 'game', 'end']) $('s-' + s).hidden = s !== name;
+  for (const s of ['name', 'rules', 'lobby', 'game', 'end']) $('s-' + s).hidden = s !== name;
 }
 
 function route() {
   if (practice) return;
-  if (!me) { show('name'); setTimeout(() => $('name')?.focus(), 50); return; }
+  if (!me) { if (screen !== 'rules') { show('name'); setTimeout(() => $('name')?.focus(), 50); } return; }
   if (me.finished_at) { if (screen !== 'end') victory(); return; }
   const phase = eventPhase(ev);
   if (phase === 'waiting') { show('lobby'); renderLobby(); }
@@ -103,25 +105,37 @@ function route() {
 }
 
 // ---------- join ----------
-$('join').addEventListener('submit', async e => {
+$('join').addEventListener('submit', e => {
   e.preventDefault();
   const name = $('name').value.trim();
   if (!name) return;
-  $('join-btn').disabled = true; $('join-err').textContent = '';
+  $('join-err').textContent = ''; $('rules-err').textContent = '';
+  $('rules-name').textContent = name;
+  $('agree').checked = false; $('rules-go').disabled = true;
+  show('rules');
+});
+$('agree').onchange = () => { $('rules-go').disabled = !$('agree').checked; };
+$('rules-back').onclick = () => { show('name'); $('name').focus(); };
+$('rules-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!$('agree').checked) return;
+  const name = $('name').value.trim();
+  $('rules-go').disabled = true; $('rules-err').textContent = '';
   const { data, error } = await sb.rpc('join_game', { p_name: name });
-  $('join-btn').disabled = false;
+  $('rules-go').disabled = false;
   if (error || !data?.[0]) {
     const m = error?.message || '';
-    $('join-err').textContent = m.includes('closed') ? 'The cavern is closed. Ask the organisers.'
-      : m.includes('taken') || m.includes('duplicate') ? 'That name is already playing. Add your surname or roll number.'
+    const text = m.includes('closed') ? 'The cavern is closed. Ask the organisers.'
+      : m.includes('taken') || m.includes('duplicate') ? 'That name is already playing. Go back and add your surname or roll number.'
       : 'Could not join. Check the internet and try again.';
+    $('rules-err').textContent = text; $('join-err').textContent = text;
     return;
   }
   cred = { id: data[0].player_id, token: data[0].token };
   localStorage.setItem(KEY, JSON.stringify(cred));
   const r = await sb.rpc('get_player', { p_id: cred.id, p_token: cred.token });
   me = r.data; results = []; hearts = 3; shownZone = null; bossIntroDone = false; usedBoss = new Set(); guidesSeen = new Set();
-  players = await fetchPlayers();
+  players = await fetchPlayers(BOARD_COLS);
   route();
 });
 
@@ -245,7 +259,7 @@ function renderQuestion() {
   $('qcard').innerHTML = `
     <p class="prompt">${diff ? `<span class="d ${diff}">[${diff} · ${BOSS.damage[diff]} dmg]</span> ` : ''}${esc(q.prompt)}</p>
     <div class="choices">${choices.map((c, i) => `<button class="choice" data-i="${i}"><span class="key">${i + 1}</span><span>${esc(c)}</span></button>`).join('')}</div>
-    <div class="q-foot"><p class="explain" id="explain"></p>${current.bonus ? '<button class="btn ghost skip" id="skip-bonus">Skip bonus (S)</button>' : ''}</div>`;
+    <div class="q-foot"><p class="explain bad" id="explain">${!diff && !current.bonus && me.attempt ? 'Last try for this monster!' : ''}</p>${current.bonus ? '<button class="btn ghost skip" id="skip-bonus">Skip bonus (S)</button>' : ''}</div>`;
   replay($('qcard'), 'rise');
   $('qcard').querySelectorAll('.choice').forEach(b => b.onclick = () => answer(+b.dataset.i));
   if (current.bonus) $('skip-bonus').onclick = () => answer(-1);
@@ -264,23 +278,27 @@ addEventListener('keydown', e => {
 
 async function answer(i) {
   if (busy || !current) return;
+  const btns = [...$('qcard').querySelectorAll('.choice')];
+  if (i >= 0 && btns[i]?.disabled) return;
   busy = true;
   const { q, choices, diff } = current;
   const ok = i >= 0 && choices[i] === q.answer;
-  const btns = [...$('qcard').querySelectorAll('.choice')];
+  const boss = me.stage >= stages();
+  // monsters give 2 attempts: the first miss keeps the question, the right answer stays hidden
+  const retry = !boss && !current.bonus && !ok && !me.attempt;
   btns.forEach((b, j) => {
     b.disabled = true;
-    if (choices[j] === q.answer) b.classList.add('right');
+    if (retry) { if (j === i) b.classList.add('wrong', 'used'); }
+    else if (choices[j] === q.answer) b.classList.add('right');
     else if (j === i) b.classList.add('wrong');
     else b.classList.add('dim');
   });
   const ex = $('explain');
   ex.className = 'explain ' + (ok ? 'ok' : 'bad');
-  ex.textContent = (ok ? '✔ Correct! ' : '✘ Not quite. ') + (q.explain || (ok ? '' : `Answer: ${q.answer}`));
+  ex.textContent = retry ? '✘ Not quite: +10 sec. One more try!' : (ok ? '✔ Correct! ' : '✘ Not quite. ') + (q.explain || (ok ? '' : `Answer: ${q.answer}`));
 
-  const before = { stage: me.stage, hp: me.boss_hp };
+  const before = { stage: me.stage, hp: me.boss_hp, attempt: me.attempt || 0 };
   const req = send(before, ok, diff);
-  const boss = before.stage >= stages();
 
   if (current.bonus) {
     $('skip-bonus').disabled = true;
@@ -306,13 +324,20 @@ async function answer(i) {
   } else {
     streak = 0; showCombo(0);
     await enemyStrike();
-    if (!boss) { results[before.stage] = 'miss'; saveResults(); renderRunes(); }
-    await sleep(900); // time to read the right answer
+    if (!boss && !retry) { results[before.stage] = 'miss'; saveResults(); renderRunes(); }
+    await sleep(900); // time to read the right answer, or a short lock before the second try
   }
 
   const res = await req;
   if (res === 'timeup') { timeUp(); return; }
   if (res) me = res;
+  if (!boss && !current.bonus && me.stage === before.stage && !me.finished_at) {
+    // second attempt on the same monster
+    btns.forEach(b => { if (!b.classList.contains('used')) b.disabled = false; });
+    ex.textContent = '✘ +10 sec. Last try for this monster!';
+    busy = false;
+    return;
+  }
   if (boss) {
     renderBossPlate();
     if (me.finished_at) {
@@ -322,7 +347,7 @@ async function answer(i) {
       burst($('enemy'), 40, ['#c27bff', '#f2c14e', '#fff']);
       flash('rgba(255,240,180,.7)');
       await sleep(900);
-      players = await fetchPlayers();
+      players = await fetchPlayers(BOARD_COLS);
       victory();
       return;
     }
@@ -355,7 +380,7 @@ function showCombo(n) {
 async function send(before, ok, diff) {
   if (practice) return practiceAnswer(ok, diff);
   for (let attempt = 0; attempt < 4; attempt++) {
-    const { data, error } = await sb.rpc('submit_answer', { p_id: cred.id, p_token: cred.token, p_stage: before.stage, p_hp: before.hp, p_correct: ok, p_diff: diff || null });
+    const { data, error } = await sb.rpc('submit_answer', { p_id: cred.id, p_token: cred.token, p_stage: before.stage, p_hp: before.hp, p_attempt: before.attempt, p_correct: ok, p_diff: diff || null });
     if (!error) return data;
     if (error.message?.includes('Time is up')) return 'timeup';
     await sleep(600 * (attempt + 1));
@@ -368,7 +393,10 @@ async function send(before, ok, diff) {
 // Mirrors submit_answer in SQL for the local practice run
 function practiceAnswer(ok, diff) {
   const p = { ...me };
-  if (p.stage < stages()) { p.stage++; if (ok) p.correct++; else { p.wrong++; p.penalty_sec += 10; } }
+  if (p.stage < stages()) {
+    if (ok) { p.stage++; p.attempt = 0; p.correct++; }
+    else { p.wrong++; p.penalty_sec += 10; if (p.attempt) { p.stage++; p.attempt = 0; } else p.attempt = 1; }
+  }
   else if (ok) {
     p.correct++;
     p.boss_hp = Math.max(0, p.boss_hp - BOSS.damage[diff]);
@@ -380,7 +408,7 @@ function practiceAnswer(ok, diff) {
 function startPractice() {
   practice = true;
   pev = { status: 'running', started_at: new Date(now()).toISOString(), duration_sec: 300 };
-  me = { id: 'practice', name: $('name').value.trim() || 'Adventurer', stage: 0, boss_hp: 100, correct: 0, wrong: 0, penalty_sec: 0, created_at: pev.started_at, finished_at: null, total_ms: null };
+  me = { id: 'practice', name: $('name').value.trim() || 'Adventurer', stage: 0, boss_hp: 100, attempt: 0, correct: 0, wrong: 0, penalty_sec: 0, bonus_sec: 0, bonus_count: 0, tab_strikes: 0, restarts: 0, created_at: pev.started_at, finished_at: null, total_ms: null };
   results = []; hearts = 3; shownZone = null; bossIntroDone = false; usedBoss = new Set(); streak = 0; guidesSeen = new Set();
   document.body.classList.add('practice');
   screen = null;
@@ -397,6 +425,52 @@ function exitPractice() {
 }
 $('practice-btn').onclick = startPractice;
 $('exit-practice').onclick = exitPractice;
+
+// ---------- tab-switch policy ----------
+// Hiding the tab during a running round is a strike; the server restarts the run on the 3rd.
+let pendingWarn = null;
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden) {
+    if (practice || !cred || !me || me.finished_at || screen !== 'game' || eventPhase(ev) !== 'running') return;
+    const before = me;
+    const { data } = await sb.rpc('report_tab_switch', { p_id: cred.id, p_token: cred.token });
+    if (!data?.id) return;
+    me = data;
+    pendingWarn = data.restarts > (before.restarts || 0) ? 'restart' : data.tab_strikes;
+  }
+  if (!document.hidden && pendingWarn != null) showWarn();
+});
+
+function showWarn() {
+  const w = pendingWarn; pendingWarn = null;
+  if (w == null || document.querySelector('.warn-modal')) return;
+  const restart = w === 'restart';
+  sfx.hurt();
+  const m = document.createElement('div');
+  m.className = 'warn-modal';
+  m.setAttribute('role', 'alertdialog');
+  m.innerHTML = `
+    <div class="panel warn-box ${restart ? 'restart' : ''}">
+      <div class="warn-icon">${restart ? '💀' : '⚠️'}</div>
+      <h2>${restart ? 'Back to checkpoint 1' : `Tab switch: strike ${w} of 3`}</h2>
+      <p>${restart
+        ? 'You left the game 3 times. Your run restarts from the first monster, your bonuses are gone, and the clock kept running.'
+        : `Leaving this tab is against the rules. ${3 - w === 1 ? 'One more' : `${3 - w} more`} and you go back to checkpoint 1.`}</p>
+      <button class="btn" id="warn-ok">I understand</button>
+    </div>`;
+  document.body.append(m);
+  $('warn-ok').focus();
+  $('warn-ok').onclick = () => {
+    m.remove();
+    if (restart) {
+      results = []; saveResults();
+      hearts = 3; streak = 0; showCombo(0); bossIntroDone = false; usedBoss = new Set(); shownZone = null; current = null; busy = false;
+      renderRunes(); renderHearts(); renderTrack();
+      spawn();
+    }
+  };
+}
+$('s-game').addEventListener('contextmenu', e => e.preventDefault());
 
 // ---------- effects ----------
 function replay(el, cls) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
@@ -550,6 +624,8 @@ function tick() {
   $('ev-time').textContent = fmt(left);
   $('ev-timer').classList.toggle('low', left < 60000);
   $('my-time').textContent = fmt(myElapsed());
+  $('strikes').textContent = `👁 ${me.tab_strikes || 0}/3`;
+  $('strikes').classList.toggle('hot', (me.tab_strikes || 0) >= 2);
   $('my-pen').innerHTML = [me.penalty_sec ? `<span class="bad">+${me.penalty_sec}s</span>` : '', me.bonus_sec ? `<span class="good">−${me.bonus_sec}s ⭐</span>` : ''].join(' ');
   if (left <= 0 && !me.finished_at) timeUp();
 }
@@ -602,7 +678,7 @@ function victory() {
   setTimeout(() => { $('chest')?.classList.add('open'); confetti($('confetti')); sfx.victory(); }, 700);
   // keep rank fresh while they celebrate
   clearInterval(endTimer);
-  endTimer = setInterval(async () => { players = await fetchPlayers(); const s = $('end').querySelector('.stats'); if (s && me) s.outerHTML = stats(); }, 5000);
+  endTimer = setInterval(async () => { players = await fetchPlayers(BOARD_COLS); const s = $('end').querySelector('.stats'); if (s && me) s.outerHTML = stats(); }, 5000);
 }
 
 function timeUp() {
@@ -619,7 +695,7 @@ function timeUp() {
   clearInterval(endTimer);
   endTimer = setInterval(async () => {
     if (!cred) return;
-    players = await fetchPlayers();
+    players = await fetchPlayers(BOARD_COLS);
     const r = await sb.rpc('get_player', { p_id: cred.id, p_token: cred.token });
     if (r.data?.id) me = r.data;
     const s = $('end').querySelector('.stats');
