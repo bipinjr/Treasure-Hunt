@@ -744,9 +744,6 @@ function feedbackForm() {
       <h4 class="fb-sub">About you</h4>
       ${chips('stream', 'Which stream are you in?', ['Science', 'Commerce', 'Arts', 'Other'])}
       ${chips('plan', 'What do you plan to study after PU?', ['BCA', 'BCom / BBA', 'BSc', 'Engineering', 'Other', 'Not decided'])}
-      <fieldset class="fb-q"><legend>Your college name <span class="opt">(optional)</span></legend>
-        <input class="fb-text" name="college" maxlength="120" autocomplete="off" placeholder="e.g. KLE PU College">
-      </fieldset>
       <fieldset class="fb-q"><legend>Any suggestions for the organisers or the college? <span class="opt">(optional)</span></legend>
         <textarea name="comment" maxlength="500" rows="2" placeholder="What did you like? What should we do better next time?"></textarea>
       </fieldset>

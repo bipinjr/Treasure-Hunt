@@ -102,7 +102,7 @@
       <div class="ledger fb-ledger" id="fb-summary"></div>
       <div class="table-scroll">
         <table class="admin-table">
-          <thead><tr><th>Player</th><th>Overall experience</th><th>BCA event</th><th>Organisation</th><th>Organisers</th><th>Would study BCA here?</th><th>Stream</th><th>Year</th><th>Plan after PU</th><th>College</th><th>Suggestion</th><th>Sent</th></tr></thead>
+          <thead><tr><th>Player</th><th>Overall experience</th><th>BCA event</th><th>Organisation</th><th>Organisers</th><th>Would study BCA here?</th><th>Stream</th><th>Year</th><th>Plan after PU</th><th>Suggestion</th><th>Sent</th></tr></thead>
           <tbody id="fb-rows"></tbody>
         </table>
       </div>
@@ -357,7 +357,7 @@
       ].map(([l, v]) => `<div><b>${v}</b><span>${l}</span></div>`).join('');
       $('fb-rows').innerHTML = feedback.length ? feedback.map(f => `<tr>
         <td class="pname">${esc(f.name)}</td><td class="stars-txt">${starsTxt(f.overall)}</td><td class="stars-txt">${starsTxt(f.event_rating)}</td><td class="stars-txt">${starsTxt(f.organisation)}</td><td class="stars-txt">${starsTxt(f.organisers)}</td>
-        <td>${f.interest || '–'}</td><td>${esc(f.stream || '–')}</td><td>${esc(f.pu_year || '–')}</td><td>${esc(f.plan || '–')}</td><td>${esc(f.college || '–')}</td><td class="fb-comment">${f.comment ? esc(f.comment) : '–'}</td><td>${new Date(f.created_at).toLocaleTimeString()}</td></tr>`).join('')
+        <td>${f.interest || '–'}</td><td>${esc(f.stream || '–')}</td><td>${esc(f.pu_year || '–')}</td><td>${esc(f.plan || '–')}</td><td class="fb-comment">${f.comment ? esc(f.comment) : '–'}</td><td>${new Date(f.created_at).toLocaleTimeString()}</td></tr>`).join('')
         : '<tr><td colspan="12" class="empty-row">No feedback yet. It appears here as players finish.</td></tr>';
     }
     $('fb-export').onclick = async () => {
@@ -365,7 +365,7 @@
         'Name': f.name, 'Overall experience (1-5)': f.overall, 'BCA Tech Quest event (1-5)': f.event_rating,
         'Event organisation (1-5)': f.organisation ?? '', 'Organisers & volunteers (1-5)': f.organisers ?? '',
         'Would consider BCA at this college': f.interest ?? '', 'Stream': f.stream ?? '', 'PU year': f.pu_year ?? '',
-        'Plan after PU': f.plan ?? '', 'College': f.college ?? '', 'Suggestion': f.comment ?? '', 'Sent at': when(f.created_at),
+        'Plan after PU': f.plan ?? '', 'Suggestion': f.comment ?? '', 'Sent at': when(f.created_at),
       }));
       try { await downloadXlsx('cavern-of-code-feedback', [['Feedback', rows.length ? rows : [{ 'Name': 'No feedback yet' }]]]); msg('Feedback Excel file downloaded.'); }
       catch { msg('Could not create the Excel file. Check the internet and try again.', true); }
