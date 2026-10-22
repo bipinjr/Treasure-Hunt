@@ -42,7 +42,7 @@ export const BONUS_SEC = 20;
 // Activities (type: bits | order | type | robot | sort) are hands-on; plain items are quick quiz questions.
 export const ENEMIES = [
   // ---- Zone 1: Crypt of Cipher ----
-  { zone: 'crypt', name: 'Bone Clerk', sprite: 'skeleton', difficulty: 'easy', variants: [
+  { zone: 'crypt', name: 'Bone Clerk', sprite: 'skelwar', difficulty: 'easy', variants: [
     { type: 'type', alphabet: true, prompt: 'Move each letter back by 1:  D B U', answer: 'CAT', explain: 'D→C, B→A, U→T' },
     { type: 'type', alphabet: true, prompt: 'Move each letter back by 1:  E P H', answer: 'DOG', explain: 'E→D, P→O, H→G' },
     { type: 'type', alphabet: true, prompt: 'Move each letter back by 1:  C P Y', answer: 'BOX', explain: 'C→B, P→O, Y→X' },
@@ -56,15 +56,15 @@ export const ENEMIES = [
     { type: 'shoot', prompt: 'Shoot what we save as TEXT!', good: ['Phone number', 'Your name', 'Email'], bad: ['Price', 'Age', 'Marks', 'Temperature'], explain: 'You never do maths with phone numbers or names' },
     { type: 'shoot', prompt: 'Shoot what we save as NUMBERS!', good: ['Price', 'Marks', 'Age'], bad: ['Name', 'Email', 'Phone number', 'City'], explain: 'Numbers are things you add or compare' },
   ]},
-  { zone: 'crypt', name: 'Byte Spider', sprite: 'bat', palette: 'heart', difficulty: 'medium', variants: [
+  { zone: 'crypt', name: 'Byte Spider', sprite: 'spider', difficulty: 'medium', variants: [
     { type: 'order', prompt: 'Smallest file to biggest 📦', items: ['A text message', 'A photo', 'A song', 'A full movie'], explain: 'Video takes the most space' },
     { type: 'order', prompt: 'Smallest to biggest storage 📦', items: ['KB', 'MB', 'GB', 'TB'], explain: 'Kilo < Mega < Giga < Tera' },
   ]},
-  { zone: 'crypt', name: 'Number Ghoul', sprite: 'ghost', difficulty: 'medium', variants: [
+  { zone: 'crypt', name: 'Number Ghoul', sprite: 'mage', difficulty: 'medium', variants: [
     { type: 'match', prompt: 'Match each file to the app that opens it', pairs: [['marks.pdf', 'PDF reader'], ['song.mp3', 'Music player'], ['selfie.jpg', 'Photo viewer'], ['fees.xlsx', 'Excel']], explain: 'The ending of a file name tells you its type' },
     { type: 'match', prompt: 'Match each tech to what it connects', pairs: [['Wi-Fi', 'Internet'], ['Bluetooth', 'Earbuds'], ['GPS', 'Maps'], ['USB', 'Pen drive']], explain: 'Every connection has its own job' },
   ]},
-  { zone: 'crypt', name: 'Cipher Lich', sprite: 'skeleton', palette: 'heart', difficulty: 'hard', guardian: true, variants: [
+  { zone: 'crypt', name: 'Cipher Lich', sprite: 'mage', palette: 'heart', difficulty: 'hard', guardian: true, variants: [
     { type: 'bits', prompt: 'Five bulbs now! Make 21', bits: [16, 8, 4, 2, 1], target: 21, explain: '16 + 4 + 1 = 21 → 10101' },
     { type: 'bits', prompt: 'Five bulbs now! Make 26', bits: [16, 8, 4, 2, 1], target: 26, explain: '16 + 8 + 2 = 26 → 11010' },
   ]},
@@ -94,11 +94,11 @@ export const ENEMIES = [
     { type: 'robot', prompt: 'Get the robot to the ⭐', size: 4, start: [0, 3], goal: [3, 0], walls: [[1, 2], [2, 1], [1, 0]], max: 8, explain: 'Programs are just steps a computer follows' },
     { type: 'robot', prompt: 'Get the robot to the ⭐', size: 4, start: [0, 0], goal: [3, 3], walls: [[1, 0], [1, 1], [3, 1], [2, 3]], max: 8, explain: 'Programs are just steps a computer follows' },
   ]},
-  { zone: 'forge', name: 'Branch Goblin', sprite: 'magma', palette: 'shields', difficulty: 'medium', variants: [
+  { zone: 'forge', name: 'Branch Goblin', sprite: 'orc', difficulty: 'medium', variants: [
     { type: 'catch', prompt: 'Catch the programming languages!', good: ['Python', 'Java', 'C++', 'JavaScript'], bad: ['Excel', 'Chrome', 'WhatsApp'], explain: 'Languages are how we talk to computers' },
     { type: 'catch', prompt: 'Catch the INPUT devices!', good: ['Keyboard', 'Mouse', 'Microphone', 'Scanner'], bad: ['Monitor', 'Speaker', 'Printer'], explain: 'Input devices send information into the computer' },
   ]},
-  { zone: 'forge', name: 'Maze Wyrm', sprite: 'golem', palette: 'forge', difficulty: 'medium', variants: [
+  { zone: 'forge', name: 'Maze Wyrm', sprite: 'dragon', palette: 'forge', difficulty: 'medium', variants: [
     { type: 'robot', prompt: 'Bigger maze! Reach the ⭐', size: 5, start: [2, 4], goal: [2, 0], walls: [[1, 2], [2, 2], [3, 2], [0, 1]], max: 10, explain: 'Plan the path before you press Run' },
     { type: 'robot', prompt: 'Bigger maze! Reach the ⭐', size: 5, start: [0, 4], goal: [4, 4], walls: [[1, 4], [1, 3], [3, 4], [3, 3], [3, 1]], max: 10, explain: 'Plan the path before you press Run' },
   ]},
@@ -120,7 +120,7 @@ export const ENEMIES = [
     { type: 'shoot', prompt: 'Shoot the SCAM messages! 🚨', good: ['Win an iPhone now!', 'Share your OTP', 'Pay ₹25 or lose parcel', 'KYC expired, click here'], bad: ['Class at 9 AM', 'Happy birthday!', 'Order delivered', 'See you at 5'], explain: 'Prizes, OTPs and hurry = scam' },
     { type: 'shoot', prompt: 'Shoot the SCAM messages! 🚨', good: ['Free recharge, click!', 'Send Aadhaar photo', 'Your SIM blocks today', 'Lottery: pay ₹99'], bad: ['Mom: lunch is ready', 'Exam on Monday', 'Swiggy is on the way', 'Good morning!'], explain: 'Prizes, OTPs and hurry = scam' },
   ]},
-  { zone: 'shields', name: 'Lock Knight', sprite: 'golem', palette: 'shields', difficulty: 'medium', variants: [
+  { zone: 'shields', name: 'Lock Knight', sprite: 'skelwar', palette: 'shields', difficulty: 'medium', variants: [
     { type: 'order', prompt: 'Weakest to strongest password 🔒', items: ['1234', 'rahul2007', 'Rahul@2007', 'Tiger!Mango#River92'], explain: 'Longer + mixed = stronger' },
     { type: 'order', prompt: 'Weakest to strongest password 🔒', items: ['abc', 'abc123', 'Abc@123', 'purple-tiger-eats-42-mangoes'], explain: 'Long passphrases are the strongest' },
   ]},
@@ -128,11 +128,11 @@ export const ENEMIES = [
     { type: 'shoot', prompt: 'Shoot only the STRONG passwords! 💪', good: ['T!ger#Mango92', 'purple-cat-eats-42-dosas', 'R@inyDay#2026'], bad: ['123456', 'password', 'rahul2007', 'qwerty'], explain: 'Long + mixed symbols = strong' },
     { type: 'shoot', prompt: 'Shoot only the STRONG passwords! 💪', good: ['Bl#eSky!Rocket7', 'my-dog-loves-90-idlis', 'K@rnataka#Tq26'], bad: ['111111', 'iloveyou', 'abc123', 'priya2008'], explain: 'Long + mixed symbols = strong' },
   ]},
-  { zone: 'shields', name: 'Phish Phantom', sprite: 'ghost', palette: 'shields', difficulty: 'hard', variants: [
+  { zone: 'shields', name: 'Phish Phantom', sprite: 'spider', palette: 'shields', difficulty: 'hard', variants: [
     { type: 'sort', prompt: 'Real website or fake?', labels: ['Real', 'Fake'], items: [['sbi.co.in', 'Real'], ['sbi-kyc-update.xyz', 'Fake'], ['amaz0n-offers.com', 'Fake'], ['irctc.co.in', 'Real']], explain: 'Look for odd endings and swapped letters' },
     { type: 'sort', prompt: 'Real website or fake?', labels: ['Real', 'Fake'], items: [['india.gov.in', 'Real'], ['paytm-refund.top', 'Fake'], ['flipkart.com', 'Real'], ['g00gle-login.net', 'Fake']], explain: 'Look for odd endings and swapped letters' },
   ]},
-  { zone: 'shields', name: 'Gatekeeper Wraith', sprite: 'ghost', palette: 'shields', difficulty: 'hard', guardian: true, variants: [
+  { zone: 'shields', name: 'Gatekeeper Wraith', sprite: 'orc', palette: 'shields', difficulty: 'hard', guardian: true, variants: [
     { prompt: 'Which UPI request is a scam?', choices: ['"Enter PIN to RECEIVE ₹500"', '"Enter PIN to PAY the shop"', '"Scan the shop QR"', '"Check the name first"'], answer: '"Enter PIN to RECEIVE ₹500"', explain: 'You never need a PIN to receive money' },
     { prompt: 'An unknown number sends your "2nd PU marks card" link and asks for an OTP. You…', choices: ['Get it only from the official board website', 'Share the OTP', 'Forward it to friends', 'Pay to unlock it'], answer: 'Get it only from the official board website', explain: 'Results come from official sites only' },
   ]},
@@ -146,7 +146,7 @@ export const ENEMIES = [
     { type: 'sort', prompt: 'Uses AI or not?', labels: ['Not AI', 'AI'], items: [['Face unlock', 'AI'], ['Calculator', 'Not AI'], ['YouTube suggestions', 'AI'], ['Light switch', 'Not AI']], explain: 'AI learns patterns from data' },
     { type: 'sort', prompt: 'Uses AI or not?', labels: ['Not AI', 'AI'], items: [['Google Maps traffic', 'AI'], ['Wall clock', 'Not AI'], ['Instagram filters', 'AI'], ['Torch light', 'Not AI']], explain: 'AI learns patterns from data' },
   ]},
-  { zone: 'heart', name: 'Data Hydra', sprite: 'magma', palette: 'heart', difficulty: 'easy', variants: [
+  { zone: 'heart', name: 'Data Hydra', sprite: 'dragon', palette: 'heart', difficulty: 'easy', variants: [
     { type: 'drive', prompt: 'Race through the AI gates!', gates: [
       { q: 'Which one uses AI?', lanes: ['Calculator', 'Alexa', 'Torch'], answer: 'Alexa' },
       { q: 'AI learns from…', lanes: ['Luck', 'Magic', 'Data'], answer: 'Data' },
@@ -162,7 +162,7 @@ export const ENEMIES = [
     { prompt: 'Using ChatGPT to write your whole 2nd PU project is…', choices: ['Not okay: use it to learn, not copy', 'Totally fine', 'Required', 'Faster, so better'], answer: 'Not okay: use it to learn, not copy', explain: 'Teachers want your own work' },
     { prompt: 'Best way to use AI for board exam revision? 📚', choices: ['Ask it to quiz you on a chapter', 'Copy its answers in the exam', 'Ask it to guess the paper', 'Skip studying'], answer: 'Ask it to quiz you on a chapter', explain: 'Use AI as a study buddy' },
   ]},
-  { zone: 'heart', name: 'Mirage Mind', sprite: 'robot', palette: 'heart', difficulty: 'medium', variants: [
+  { zone: 'heart', name: 'Mirage Mind', sprite: 'mage', palette: 'heart', difficulty: 'medium', variants: [
     { type: 'sort', prompt: 'Is it a sign of an AI-made photo?', labels: ['Normal', 'AI sign'], items: [['Six fingers on a hand', 'AI sign'], ['Natural shadows', 'Normal'], ['Melted, unreadable text', 'AI sign'], ['Clear faces of real friends', 'Normal']], explain: 'Hands and text often look odd in AI images' },
     { type: 'sort', prompt: 'Is it a sign of an AI-made photo?', labels: ['Normal', 'AI sign'], items: [['Earrings that do not match', 'AI sign'], ['A real place you know', 'Normal'], ['Too-smooth plastic skin', 'AI sign'], ['Normal blurry background', 'Normal']], explain: 'Look closely at small details' },
   ]},

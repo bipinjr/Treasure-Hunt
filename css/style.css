@@ -837,3 +837,7 @@ body[data-zone] .stage::before, body[data-zone] .stage::after, body[data-zone] .
 @keyframes bolt { 0%, 88% { opacity: 0; } 90%, 94% { opacity: 1; } 92%, 100% { opacity: 0; } }
 #knight { width: clamp(130px, 13.5vw, 190px); }
 #knight .body svg { filter: drop-shadow(0 0 2px rgba(0,0,0,.9)) drop-shadow(0 10px 0 rgba(0,0,0,.45)); }
+
+/* tougher monsters: bigger, crisp dark outline */
+#enemy:not(.boss):not(.chest-foe) { width: clamp(130px, 13.5vw, 190px); }
+#enemy .body svg { filter: drop-shadow(0 0 2px rgba(0,0,0,.95)) drop-shadow(0 10px 0 rgba(0,0,0,.45)); }
