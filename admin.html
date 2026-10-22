@@ -53,6 +53,21 @@
     <!-- live numbers -->
     <div class="panel ledger" id="ledger" aria-live="polite"></div>
 
+    <!-- end-to-end monitor: what the projector shows + one player's full scorecard -->
+    <div class="panel admin-card">
+      <div class="row" style="justify-content:space-between">
+        <h3>Monitor</h3>
+        <span class="muted-small">Click any player's name in the table to open their scorecard.</span>
+      </div>
+      <div class="monitor">
+        <div>
+          <div class="muted-small" style="margin-bottom:6px">Projector view (live)</div>
+          <div class="proj-frame" id="proj-frame"><iframe src="leaderboard.html" title="Projector leaderboard preview" tabindex="-1"></iframe></div>
+        </div>
+        <div class="scorecard" id="scorecard" aria-live="polite"></div>
+      </div>
+    </div>
+
     <!-- where everyone is right now -->
     <div class="panel admin-card">
       <h3>Descent map: where players are right now</h3>
@@ -163,7 +178,7 @@
         return `<tr>
           <td class="num">${n}</td>
           <td><span class="dot ${cls}"></span>${label}</td>
-          <td class="pname">${esc(p.name)}</td>
+          <td class="pname"><button class="sel" data-id="${p.id}" aria-label="Open scorecard for ${esc(p.name)}">${esc(p.name)}</button></td>
           <td>${zoneLabel(p)}</td>
           <td><div class="mini-bar"><i style="width:${progressPct(p)}%"></i></div><small>${p.finished_at ? 'done' : stageLabel(p)}</small></td>
           <td class="num">${p.correct}</td><td class="num">${p.wrong}</td>
@@ -173,6 +188,9 @@
           <td style="white-space:nowrap"><button class="adj" data-id="${p.id}" data-n="${esc(p.name)}">± Time</button>
             <button class="del" data-id="${p.id}" data-n="${esc(p.name)}">Remove</button></td></tr>`;
       }).join('') : `<tr><td colspan="11" class="empty-row">${q ? 'No player matches that name.' : 'No players yet. Share the game link and ask everyone to enter their name.'}</td></tr>`;
+      $('rows').querySelectorAll('.sel').forEach(b => b.onclick = () => { selected = b.dataset.id; render(); $('scorecard').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
+      [...$('rows').children].forEach(tr => tr.classList.toggle('picked', !!tr.querySelector(`.sel[data-id="${selected}"]`)));
+      renderCard();
       $('rows').querySelectorAll('.del').forEach(b => b.onclick = async () => {
         if (confirm(`Remove "${b.dataset.n}" from the game?`) && await call('admin_delete_player', { p_id: b.dataset.id })) { msg(`Removed ${b.dataset.n}.`); refresh(); }
       });
@@ -181,6 +199,46 @@
         if (s && await call('admin_adjust_time', { p_id: b.dataset.id, p_seconds: s })) { msg(`${s > 0 ? '+' : ''}${s}s applied to ${b.dataset.n}.`); refresh(); }
       });
     }
+
+    // Scorecard for the selected player (defaults to the current leader)
+    let selected = null;
+    function renderCard() {
+      const r = rank(players);
+      const p = r.find(x => x.id === selected) || r[0];
+      if (!p) { $('scorecard').innerHTML = '<p class="muted-small">Scorecards appear here once players join.</p>'; return; }
+      const n = r.indexOf(p) + 1, [cls, label] = status(p), t = liveMs(p);
+      const start = ev?.started_at ? Math.max(new Date(p.created_at).getTime(), new Date(ev.started_at).getTime()) : null;
+      const elapsed = t == null ? null : Math.max(0, t - (p.penalty_sec - p.bonus_sec) * 1000);
+      const answered = p.correct + p.wrong;
+      const zones = [['Crypt of Cipher', '#5b8def'], ['Forge of Logic', '#ff8a3d'], ['Gate of Shields', '#3ddc84'], ['Heart of the Cave', '#c27bff']];
+      $('scorecard').innerHTML = `
+        <div class="sc-head">
+          <div><div class="sc-name">${esc(p.name)}</div><div class="muted-small"><span class="dot ${cls}"></span>${label} · last active ${new Date(p.last_seen).toLocaleTimeString()}</div></div>
+          <div class="sc-rank">#${n}<small>of ${r.length}</small></div>
+        </div>
+        <div class="sc-time">
+          <div><b>${elapsed == null ? '–' : fmt(elapsed)}</b><span>Time in cavern</span></div>
+          <div class="bad"><b>${p.penalty_sec ? `+${p.penalty_sec}s` : "0s"}</b><span>${p.wrong} wrong</span></div>
+          <div class="good"><b>${p.bonus_sec ? `−${p.bonus_sec}s` : "0s"}</b><span>${p.bonus_count} bonus ⭐</span></div>
+          <div class="total"><b>${t == null ? '–' : fmt(t)}</b><span>${p.finished_at ? 'Final score' : 'Score so far'}</span></div>
+        </div>
+        <div class="sc-zones">
+          ${zones.map(([zn, c], i) => {
+            const done = Math.max(0, Math.min(7, p.stage - i * 7));
+            return `<div class="sc-zone" style="--c:${c}"><span>${zn}</span><div class="sc-pips">${Array.from({ length: 7 }, (_, k) => `<i class="${k < done ? 'on' : ''} ${k === 6 ? 'star' : ''}"></i>`).join('')}</div><small>${done}/7</small></div>`;
+          }).join('')}
+          <div class="sc-zone" style="--c:#ff4d5e"><span>The Summarizer</span><div class="mini-bar boss"><i style="width:${p.stage >= TOTAL_STAGES ? 100 - p.boss_hp : 0}%"></i></div><small>${p.stage >= TOTAL_STAGES ? `${p.boss_hp} HP left` : 'not reached'}</small></div>
+        </div>
+        <div class="sc-facts">
+          <span>Accuracy <b>${answered ? Math.round(p.correct / answered * 100) : 0}%</b></span>
+          <span>Right <b>${p.correct}</b></span>
+          <span>Joined <b>${new Date(p.created_at).toLocaleTimeString()}</b></span>
+          <span>${p.finished_at ? `Finished <b>${new Date(p.finished_at).toLocaleTimeString()}</b>` : `Started <b>${start ? new Date(start).toLocaleTimeString() : 'waiting'}</b>`}</span>
+        </div>`;
+    }
+
+    // keep the projector preview scaled to its box
+    new ResizeObserver(([e]) => $('proj-frame').style.setProperty('--s', e.contentRect.width / 1600)).observe($('proj-frame'));
 
     async function refresh() {
       [ev, players] = await Promise.all([fetchEvent(), fetchPlayers()]);

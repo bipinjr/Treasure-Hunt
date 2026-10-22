@@ -60,7 +60,9 @@ async function init() {
   setInterval(refreshPlayers, 3000);
   setInterval(tick, 250);
   // presence heartbeat for the admin's "online now" view
-  setInterval(() => { if (cred && !practice && me && !me.finished_at) sb.rpc('ping', { p_id: cred.id, p_token: cred.token }); }, 30000);
+  const ping = () => { if (cred && !practice && me && !me.finished_at) sb.rpc('ping', { p_id: cred.id, p_token: cred.token }); };
+  setInterval(ping, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) ping(); });
   route();
 }
 
@@ -108,7 +110,13 @@ $('join').addEventListener('submit', async e => {
   $('join-btn').disabled = true; $('join-err').textContent = '';
   const { data, error } = await sb.rpc('join_game', { p_name: name });
   $('join-btn').disabled = false;
-  if (error || !data?.[0]) { $('join-err').textContent = error?.message?.includes('closed') ? 'The cavern is closed. Ask the organisers.' : 'Could not join. Check the internet and try again.'; return; }
+  if (error || !data?.[0]) {
+    const m = error?.message || '';
+    $('join-err').textContent = m.includes('closed') ? 'The cavern is closed. Ask the organisers.'
+      : m.includes('taken') || m.includes('duplicate') ? 'That name is already playing. Add your surname or roll number.'
+      : 'Could not join. Check the internet and try again.';
+    return;
+  }
   cred = { id: data[0].player_id, token: data[0].token };
   localStorage.setItem(KEY, JSON.stringify(cred));
   const r = await sb.rpc('get_player', { p_id: cred.id, p_token: cred.token });
