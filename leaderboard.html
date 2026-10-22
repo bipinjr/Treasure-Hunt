@@ -22,7 +22,7 @@
       <div class="big-timer" id="bt"><div class="lbl" id="bt-lbl">Waiting to start</div><div class="val" id="bt-val">--:--</div></div>
     </div>
     <div class="podium" id="podium"></div>
-    <div style="min-height:0;overflow:hidden">
+    <div id="scroller" style="min-height:0;overflow:hidden">
       <ol class="board-list" id="list"></ol>
       <p class="board-empty" id="empty">No adventurers yet. Open the game on the PCs and enter their name!</p>
     </div>
@@ -46,7 +46,7 @@
         const p = r[i];
         return `<div class="pod p${i + 1} ${p ? '' : 'empty'}"><div class="medal">${medals[i]}</div><div class="pn">${p ? esc(p.name) : '—'}</div><div class="pt">${p ? label(p) : ''}</div></div>`;
       }).join('');
-      flipList($('list'), r.slice(3, 33), p => p.id, (p, i) => `
+      flipList($('list'), r.slice(3), p => p.id, (p, i) => `
         <span class="r">#${i + 4}</span>
         <span class="nm">${esc(p.name)}</span>
         <span class="bar"><i style="width:${progressPct(p)}%"></i></span>
@@ -79,6 +79,14 @@
     setInterval(refresh, 4000);
     setInterval(async () => { ev = (await fetchEvent()) || ev; }, 5000);
     setInterval(tick, 250);
+    // everyone stays on the board: when the list is taller than the screen it scrolls slowly, pauses, and loops
+    let pause = 0;
+    setInterval(() => {
+      const s = $('scroller');
+      if (s.scrollHeight <= s.clientHeight + 4 || pause-- > 0) return;
+      if (s.scrollTop + s.clientHeight >= s.scrollHeight - 1) { s.scrollTop = 0; pause = 60; return; }
+      s.scrollTop += 1;
+    }, 40);
   </script>
 </body>
 </html>

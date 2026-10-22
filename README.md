@@ -23,11 +23,11 @@ Vercel: import the repo with default settings (Framework = Other, no build comma
 
 ## Event flow
 1. The event is always open. A student opens `/`, types their name (unique), accepts the rules and starts immediately; their own timer (default 20 min, set in `/admin`) starts at that moment. Nobody needs to press Start.
-2. 4 zones × (6 monsters + 1 bonus chest) = 28 checkpoints, mostly hands-on activities: light the bulbs (binary), put it in order, crack the code, robot coder (maze), sort it out (safe/scam, AI/not AI), shooting gallery and lane racer, plus a few quick quiz questions. Each zone opens with a short guide.
+2. 4 zones × (6 monsters + 1 bonus chest) = 28 checkpoints, mostly hands-on activities: light the bulbs (binary), put it in order, crack the code, robot coder (maze), sort it out (safe/scam, AI/not AI), shooting gallery, lane racer, catch it and memory match (games start by themselves), plus a few quick 2nd PU common-sense questions. Each zone opens with a short guide and has its own scenery; the knight levels up (new armour) after every zone.
 3. 2 tries per monster (each miss +10 s). Bonus chest: 1 try, right = −20 s and ⭐⭐. Boss: pick easy/medium/hard damage, 100 HP. Then the chest with the clue.
 4. Stars: ⭐ per monster beaten on the first try, ⭐⭐ per bonus chest, ⭐ per boss hit.
 5. Rank: finished players by total time (time + penalties − bonuses; tie: more stars, fewer wrong, earlier finish), then unfinished players by progress.
-6. `/admin`: live players, descent map, scorecards, Excel/PDF export, feedback. **Reset all** clears players and keeps the event open.
+6. `/admin`: live players, descent map, scorecards, Excel/PDF export, feedback. Results stay saved for every participant until someone types RESET in **Reset all**. The projector lists everyone and auto-scrolls.
 
 The landing page has an "Organiser login" link at the bottom.
 

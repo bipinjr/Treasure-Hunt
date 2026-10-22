@@ -40,6 +40,9 @@ test('every activity is solvable', () => {
       case 'sort': assert.ok(q.items.every(i => q.labels.includes(i[1])) && q.labels.length === 2, q.prompt); break;
       case 'shoot': assert.ok(q.good.length >= 2 && q.bad.length >= 2 && !q.good.some(g => q.bad.includes(g)), q.prompt); break;
       case 'drive': q.gates.forEach(g => assert.ok(g.lanes.length === 3 && g.lanes.includes(g.answer), g.q)); break;
+      // catch needs good.length - 1 caught, so at least 3 good items keep it fair
+      case 'catch': assert.ok(q.good.length >= 3 && q.bad.length >= 2 && !q.good.some(g => q.bad.includes(g)), q.prompt); break;
+      case 'match': assert.ok(q.pairs.length >= 3 && new Set(q.pairs.flat()).size === q.pairs.length * 2, q.prompt); break;
     }
   }
 });

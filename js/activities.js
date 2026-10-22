@@ -1,7 +1,7 @@
 // Hands-on activities. renderActivity draws one into `host` and calls done(ok) once, when the player checks.
 // The game engine handles scoring, retries and the answer reveal (activityReveal), exactly like a quiz question.
 
-export const ACTIVITY_LABEL = { bits: '💡 Light the bulbs', order: '🧩 Put it in order', type: '🔐 Crack the code', robot: '🤖 Robot coder', sort: '🛡️ Sort it out', shoot: '🎯 Shooting gallery', drive: '🏎️ Lane racer' };
+export const ACTIVITY_LABEL = { bits: '💡 Light the bulbs', order: '🧩 Put it in order', type: '🔐 Crack the code', robot: '🤖 Robot coder', sort: '🛡️ Sort it out', shoot: '🎯 Shooting gallery', drive: '🏎️ Lane racer', catch: '🧺 Catch it', match: '🃏 Memory match' };
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
@@ -53,6 +53,8 @@ export function activityReveal(q) {
     case 'sort': return `${q.labels[1]}: ${q.items.filter(i => i[1] === q.labels[1]).map(i => i[0]).join(' · ')}`;
     case 'shoot': return `Targets: ${q.good.join(' · ')}`;
     case 'drive': return q.gates.map(g => `${g.q} ${g.answer}`).join(' · ');
+    case 'catch': return `Catch: ${q.good.join(' · ')}`;
+    case 'match': return q.pairs.map(p => `${p[0]} = ${p[1]}`).join(' · ');
   }
   return '';
 }
@@ -175,12 +177,11 @@ const RENDER = {
     const secs = q.seconds || 14;
     host.innerHTML = `
       <div class="range" id="range" aria-label="Shooting range"><div class="range-hud"><span>🎯 <b id="hits">0</b> / ${q.good.length}</span><span>❌ <b id="miss">0</b> / 1</span><span>⏱ <b id="secs">${secs}</b>s</span></div></div>
-      <div class="act-row"><span class="act-hint">Click to shoot only the right targets!</span><button class="btn act-check" id="act-check">Start</button></div>`;
+      <div class="act-row"><span class="act-hint">Get ready… click to shoot only the right targets!</span></div>`;
     const range = host.querySelector('#range');
     let hits = 0, miss = 0, over = false;
     const end = ok => { if (over) return; over = true; range.querySelectorAll('.target').forEach(t => t.disabled = true); setTimeout(() => finish(ok), 500); };
-    host.querySelector('#act-check').onclick = e => {
-      e.target.disabled = true;
+    setTimeout(() => {   // starts by itself a moment after it appears
       const all = shuffle([...q.good.map(t => [t, true]), ...q.bad.map(t => [t, false])]);
       all.forEach(([text, good], k) => setTimeout(() => {
         if (over) return;
@@ -204,7 +205,7 @@ const RENDER = {
         host.querySelector('#secs').textContent = --left;
         if (left <= 0) { clearInterval(t); end(hits === q.good.length); }
       }, 1000);
-    };
+    }, 1000);
   },
 
   // Answer gates roll toward the car; steer into the right lane before each gate arrives
@@ -217,7 +218,7 @@ const RENDER = {
         <div class="car" id="car"><svg viewBox="0 0 40 64" aria-hidden="true"><rect x="3" y="10" width="6" height="12" rx="2" fill="#111"/><rect x="31" y="10" width="6" height="12" rx="2" fill="#111"/><rect x="3" y="42" width="6" height="12" rx="2" fill="#111"/><rect x="31" y="42" width="6" height="12" rx="2" fill="#111"/><rect x="7" y="4" width="26" height="56" rx="11" fill="var(--accent)"/><rect x="11" y="16" width="18" height="12" rx="4" fill="#bfe9ff"/><rect x="11" y="40" width="18" height="8" rx="3" fill="#8fc7e6"/><rect x="18" y="4" width="4" height="56" fill="rgba(255,255,255,.55)"/></svg></div>
         <div class="road-q" id="road-q"></div>
       </div>
-      <div class="act-row"><span class="act-hint">⬅️ ➡️ arrow keys (or click a lane) to steer into the right answer</span><button class="btn act-check" id="act-check">Start engine</button></div>`;
+      <div class="act-row"><span class="act-hint">⬅️ ➡️ arrow keys (or click a lane) to steer into the right answer</span></div>`;
     const road = host.querySelector('#road'), car = host.querySelector('#car'), gate = host.querySelector('#gate');
     const steer = l => { if (over) return; lane = Math.max(0, Math.min(2, l)); car.style.left = `${lane * 33.33 + 16.66}%`; };
     steer(1);
@@ -241,6 +242,81 @@ const RENDER = {
       if (++g === q.gates.length) { over = true; setTimeout(() => finish(true), 600); return; }
       setTimeout(nextGate, 450);
     };
-    host.querySelector('#act-check').onclick = e => { e.target.disabled = true; road.focus(); nextGate(); };
+    road.focus();
+    setTimeout(nextGate, 1200);   // engine starts by itself
+  },
+
+  // Items fall; move the basket (mouse or arrow keys) to catch the right ones. Allowed: miss 1 good, catch 1 bad.
+  catch(q, host, finish) {
+    const need = q.good.length - 1;
+    host.innerHTML = `
+      <div class="sky" id="sky" tabindex="0" aria-label="Catch game: move with mouse or arrow keys">
+        <div class="range-hud"><span>🧺 <b id="got">0</b> / ${need}</span><span>❌ <b id="bad">0</b> / 1</span></div>
+        <div class="basket" id="basket">🧺</div>
+      </div>
+      <div class="act-row"><span class="act-hint">Move the mouse or use ⬅️ ➡️ to catch the right ones!</span></div>`;
+    const sky = host.querySelector('#sky'), basket = host.querySelector('#basket');
+    let x = 0.5, got = 0, bad = 0, over = false;
+    const place = () => { basket.style.left = `${x * 100}%`; };
+    place();
+    sky.addEventListener('mousemove', e => { const r = sky.getBoundingClientRect(); x = Math.min(.95, Math.max(.05, (e.clientX - r.left) / r.width)); place(); });
+    sky.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft' || e.key === 'a') { e.preventDefault(); x = Math.max(.05, x - .12); place(); }
+      if (e.key === 'ArrowRight' || e.key === 'd') { e.preventDefault(); x = Math.min(.95, x + .12); place(); }
+    });
+    sky.focus();
+    const end = ok => { if (over) return; over = true; setTimeout(() => finish(ok), 500); };
+    const items = shuffle([...q.good.map(t => [t, true]), ...q.bad.map(t => [t, false])]);
+    let left = items.length;
+    items.forEach(([text, good], k) => setTimeout(() => {
+      if (over) return;
+      const el = document.createElement('div');
+      el.className = 'drop';
+      el.textContent = text;
+      const ix = .1 + Math.random() * .8;
+      el.style.left = `${ix * 100}%`;
+      sky.append(el);
+      const t0 = performance.now(), dur = 3200;
+      const step = now => {
+        if (over) return el.remove();
+        const p = (now - t0) / dur;
+        el.style.top = `${p * 82}%`;
+        if (p < 1) return requestAnimationFrame(step);
+        const caught = Math.abs(ix - x) < .13;   // basket half-width as a share of the sky
+        el.classList.add(caught ? (good ? 'yum' : 'yuck') : 'gone');
+        setTimeout(() => el.remove(), 400);
+        if (caught && good) host.querySelector('#got').textContent = ++got;
+        if (caught && !good) { host.querySelector('#bad').textContent = ++bad; if (bad > 1) return end(false); }
+        if (got >= need) return end(true);
+        if (--left === 0) end(got >= need);
+      };
+      requestAnimationFrame(step);
+    }, 900 + k * 1300));
+  },
+
+  // Flip two cards at a time to find matching pairs; a few wrong flips are allowed
+  match(q, host, finish) {
+    const cards = shuffle(q.pairs.flatMap((p, i) => [{ t: p[0], i }, { t: p[1], i }]));
+    let lives = q.pairs.length + 2, open = [], found = 0, lock = true;
+    host.innerHTML = `
+      <div class="mem-hud">❤️ Wrong flips left: <b id="lives">${lives}</b></div>
+      <div class="memory">${cards.map((c, k) => `<button class="mcard up" data-k="${k}"><span>${esc(c.t)}</span></button>`).join('')}</div>
+      <div class="act-row"><span class="act-hint">Remember them! Then find the pairs.</span></div>`;
+    const btns = [...host.querySelectorAll('.mcard')];
+    setTimeout(() => { btns.forEach(b => b.classList.remove('up')); lock = false; host.querySelector('.act-hint').textContent = 'Flip two cards to find a matching pair.'; }, 2500);
+    btns.forEach(b => b.onclick = () => {
+      if (lock || b.classList.contains('up')) return;
+      b.classList.add('up'); open.push(b);
+      if (open.length < 2) return;
+      const [a, c] = open; open = [];
+      if (cards[a.dataset.k].i === cards[c.dataset.k].i) {
+        a.classList.add('done'); c.classList.add('done');
+        if (++found === q.pairs.length) setTimeout(() => finish(true), 500);
+      } else {
+        lock = true;
+        host.querySelector('#lives').textContent = --lives;
+        setTimeout(() => { a.classList.remove('up'); c.classList.remove('up'); lock = false; if (lives <= 0) finish(false); }, 800);
+      }
+    });
   },
 };

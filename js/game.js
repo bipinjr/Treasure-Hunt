@@ -1,6 +1,6 @@
 import { sb, syncClock, now, fmt, playerEnd, eventPhase, rank, progressPct, esc, fetchEvent, fetchPlayers, flipList, confetti, embers, stageLabel, revealOnScroll, TOTAL_STAGES } from './common.js';
 import { ZONES, ENEMIES, BOSS, RUNE_WORD, PRACTICE, BOSS_GUIDE, BONUS_GUIDE, BONUS_SEC } from './questions.js';
-import { spriteSVG } from './sprites.js';
+import { spriteSVG, sceneSVG } from './sprites.js';
 import { sfx } from './sfx.js';
 import { renderActivity, activityReveal, ACTIVITY_LABEL } from './activities.js';
 
@@ -148,9 +148,31 @@ function renderLobby() {
 }
 
 // ---------- game ----------
+// Knight level = zones cleared + 1 (5 at the boss); armour changes colour each level
+let knightLv = 0;
+const levelOf = stage => practice ? 1 : Math.min(5, 1 + Math.floor(stage / 7));
+function drawKnight(lv) {
+  $('knight').querySelector('.body').innerHTML = spriteSVG('knight', lv > 1 ? `lv${lv}` : null);
+  $('knight').dataset.lv = lv;
+  $('lv-badge').textContent = `Lv ${lv}`;
+}
+async function levelUp(lv) {
+  const k = $('knight');
+  k.classList.add('levelup');
+  flash('rgba(255,223,138,.45)');
+  burst(k, 30, ['#ffdf8a', '#fff', '#3ddc84', 'var(--accent)']);
+  floatText(`LEVEL UP! Lv ${lv}`, k);
+  sfx.victory();
+  await sleep(350);
+  drawKnight(lv);
+  $('lv-badge').animate([{ transform: 'scale(1.8)' }, { transform: 'none' }], { duration: 600, easing: 'cubic-bezier(.34,1.56,.64,1)' });
+  setTimeout(() => k.classList.remove('levelup'), 1200);
+}
+
 function startGame() {
   show('game');
-  $('knight').querySelector('.body').innerHTML = spriteSVG('knight');
+  knightLv = levelOf(me.stage);
+  drawKnight(knightLv);
   $('knight').classList.add('k-enter');
   renderTrack(); renderRunes(); renderHearts(); renderBoard();
   if (me.stage === 0 && !results.length) countdown().then(spawn); else spawn();
@@ -197,6 +219,10 @@ function spawn() {
   busy = false;
   const enemyEl = $('enemy');
   enemyEl.className = 'actor';
+  const lv = levelOf(me.stage);
+  if (lv > knightLv) { knightLv = lv; levelUp(lv); }
+  const scene = practice || me.stage >= stages() ? (me.stage >= stages() ? 'boss' : 'crypt') : enemies()[me.stage].zone;
+  if (document.body.dataset.zone !== scene) { document.body.dataset.zone = scene; $('scenery').innerHTML = sceneSVG(scene); }
   if (me.stage < stages()) {
     const e = enemies()[me.stage], z = zoneOf(me.stage);
     setAccent(z.accent);
@@ -487,6 +513,7 @@ function showWarn() {
     m.remove();
     if (restart) {
       results = []; saveResults();
+      knightLv = 1; drawKnight(1);
       hearts = 3; streak = 0; showCombo(0); bossIntroDone = false; usedBoss = new Set(); shownZone = null; current = null; busy = false;
       renderRunes(); renderHearts(); renderTrack();
       spawn();
@@ -712,7 +739,6 @@ function feedbackForm() {
       </fieldset>
       <h4 class="fb-sub">About you</h4>
       ${chips('stream', 'Which stream are you in?', ['Science', 'Commerce', 'Arts', 'Other'])}
-      ${chips('pu_year', 'Which year are you in?', ['1st PU', '2nd PU'])}
       ${chips('plan', 'What do you plan to study after PU?', ['BCA', 'BCom / BBA', 'BSc', 'Engineering', 'Other', 'Not decided'])}
       <fieldset class="fb-q"><legend>Your college name <span class="opt">(optional)</span></legend>
         <input class="fb-text" name="college" maxlength="120" autocomplete="off" placeholder="e.g. KLE PU College">
@@ -734,7 +760,7 @@ function bindFeedback() {
     f.querySelector('button').disabled = true; msg.textContent = 'Sending…';
     const num = k => d.get(k) ? +d.get(k) : null;
     const { error } = await sb.rpc('submit_feedback', { p_id: cred.id, p_token: cred.token, p_overall: num('overall'), p_event: num('event'), p_organisation: num('organisation'), p_organisers: num('organisers'), p_interest: d.get('interest') || '', p_comment: d.get('comment') || '',
-      p_stream: d.get('stream') || '', p_pu_year: d.get('pu_year') || '', p_plan: d.get('plan') || '', p_college: d.get('college') || '' });
+      p_stream: d.get('stream') || '', p_pu_year: '2nd PU', p_plan: d.get('plan') || '', p_college: d.get('college') || '' });
     if (error) { f.querySelector('button').disabled = false; msg.textContent = 'Could not send. Check the internet and try again.'; return; }
     try { localStorage.setItem(fbKey(), '1'); } catch {}
     f.outerHTML = '<div class="feedback done"><p>✔ Thanks for your feedback!</p></div>';

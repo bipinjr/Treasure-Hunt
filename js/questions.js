@@ -61,8 +61,8 @@ export const ENEMIES = [
     { type: 'order', prompt: 'Smallest to biggest storage 📦', items: ['KB', 'MB', 'GB', 'TB'], explain: 'Kilo < Mega < Giga < Tera' },
   ]},
   { zone: 'crypt', name: 'Number Ghoul', sprite: 'ghost', difficulty: 'medium', variants: [
-    { prompt: 'A=1, B=2, C=3 …  3 · 1 · 20 = ?', choices: ['CAT', 'BAT', 'CAR', 'COT'], answer: 'CAT', explain: '3=C, 1=A, 20=T' },
-    { prompt: 'A=1, B=2, C=3 …  2 · 1 · 7 = ?', choices: ['BAG', 'BIG', 'BAD', 'BEG'], answer: 'BAG', explain: '2=B, 1=A, 7=G' },
+    { type: 'match', prompt: 'Match each file to the app that opens it', pairs: [['marks.pdf', 'PDF reader'], ['song.mp3', 'Music player'], ['selfie.jpg', 'Photo viewer'], ['fees.xlsx', 'Excel']], explain: 'The ending of a file name tells you its type' },
+    { type: 'match', prompt: 'Match each tech to what it connects', pairs: [['Wi-Fi', 'Internet'], ['Bluetooth', 'Earbuds'], ['GPS', 'Maps'], ['USB', 'Pen drive']], explain: 'Every connection has its own job' },
   ]},
   { zone: 'crypt', name: 'Cipher Lich', sprite: 'skeleton', palette: 'heart', difficulty: 'hard', guardian: true, variants: [
     { type: 'bits', prompt: 'Five bulbs now! Make 21', bits: [16, 8, 4, 2, 1], target: 21, explain: '16 + 4 + 1 = 21 → 10101' },
@@ -95,8 +95,8 @@ export const ENEMIES = [
     { type: 'robot', prompt: 'Get the robot to the ⭐', size: 4, start: [0, 0], goal: [3, 3], walls: [[1, 0], [1, 1], [3, 1], [2, 3]], max: 8, explain: 'Programs are just steps a computer follows' },
   ]},
   { zone: 'forge', name: 'Branch Goblin', sprite: 'magma', palette: 'shields', difficulty: 'medium', variants: [
-    { prompt: 'IF raining → umbrella. ELSE → cap. It is sunny 😎', choices: ['Cap', 'Umbrella', 'Both', 'Nothing'], answer: 'Cap', explain: 'Not raining, so ELSE happens' },
-    { prompt: 'IF marks ≥ 90 → "A". ELSE → "B". Marks = 89', choices: ['B', 'A', 'A and B', 'None'], answer: 'B', explain: '89 is less than 90' },
+    { type: 'catch', prompt: 'Catch the programming languages!', good: ['Python', 'Java', 'C++', 'JavaScript'], bad: ['Excel', 'Chrome', 'WhatsApp'], explain: 'Languages are how we talk to computers' },
+    { type: 'catch', prompt: 'Catch the INPUT devices!', good: ['Keyboard', 'Mouse', 'Microphone', 'Scanner'], bad: ['Monitor', 'Speaker', 'Printer'], explain: 'Input devices send information into the computer' },
   ]},
   { zone: 'forge', name: 'Maze Wyrm', sprite: 'golem', palette: 'forge', difficulty: 'medium', variants: [
     { type: 'robot', prompt: 'Bigger maze! Reach the ⭐', size: 5, start: [2, 4], goal: [2, 0], walls: [[1, 2], [2, 2], [3, 2], [0, 1]], max: 10, explain: 'Plan the path before you press Run' },
@@ -134,7 +134,7 @@ export const ENEMIES = [
   ]},
   { zone: 'shields', name: 'Gatekeeper Wraith', sprite: 'ghost', palette: 'shields', difficulty: 'hard', guardian: true, variants: [
     { prompt: 'Which UPI request is a scam?', choices: ['"Enter PIN to RECEIVE ₹500"', '"Enter PIN to PAY the shop"', '"Scan the shop QR"', '"Check the name first"'], answer: '"Enter PIN to RECEIVE ₹500"', explain: 'You never need a PIN to receive money' },
-    { prompt: 'A site wants OTP + CVV to "check your age". It is…', choices: ['A scam', 'Normal', 'A government rule', 'Safe if it looks nice'], answer: 'A scam', explain: 'No age check needs your OTP' },
+    { prompt: 'An unknown number sends your "2nd PU marks card" link and asks for an OTP. You…', choices: ['Get it only from the official board website', 'Share the OTP', 'Forward it to friends', 'Pay to unlock it'], answer: 'Get it only from the official board website', explain: 'Results come from official sites only' },
   ]},
   { zone: 'shields', name: 'Shield Chest', sprite: 'chestBody', bonus: true, difficulty: 'hard', variants: [
     { type: 'type', prompt: 'Unscramble the danger word:  S U R I V', answer: 'VIRUS', explain: 'A virus is a harmful program' },
@@ -159,16 +159,16 @@ export const ENEMIES = [
     ], explain: 'AI = patterns learned from data' },
   ]},
   { zone: 'heart', name: 'Prompt Golem', sprite: 'golem', palette: 'heart', difficulty: 'medium', variants: [
-    { prompt: 'Best prompt for a fest poster? 🎨', choices: ['"Neon poster, robot, title TECH QUEST"', '"poster"', '"something nice"', '"tech"'], answer: '"Neon poster, robot, title TECH QUEST"', explain: 'Specific prompts give better results' },
-    { prompt: 'Best prompt to study a chapter? 📚', choices: ['"Summarise in 5 simple points"', '"chapter"', '"tell me everything"', '"do my homework"'], answer: '"Summarise in 5 simple points"', explain: 'Say the format and the length' },
+    { prompt: 'Using ChatGPT to write your whole 2nd PU project is…', choices: ['Not okay: use it to learn, not copy', 'Totally fine', 'Required', 'Faster, so better'], answer: 'Not okay: use it to learn, not copy', explain: 'Teachers want your own work' },
+    { prompt: 'Best way to use AI for board exam revision? 📚', choices: ['Ask it to quiz you on a chapter', 'Copy its answers in the exam', 'Ask it to guess the paper', 'Skip studying'], answer: 'Ask it to quiz you on a chapter', explain: 'Use AI as a study buddy' },
   ]},
   { zone: 'heart', name: 'Mirage Mind', sprite: 'robot', palette: 'heart', difficulty: 'medium', variants: [
     { type: 'sort', prompt: 'Is it a sign of an AI-made photo?', labels: ['Normal', 'AI sign'], items: [['Six fingers on a hand', 'AI sign'], ['Natural shadows', 'Normal'], ['Melted, unreadable text', 'AI sign'], ['Clear faces of real friends', 'Normal']], explain: 'Hands and text often look odd in AI images' },
     { type: 'sort', prompt: 'Is it a sign of an AI-made photo?', labels: ['Normal', 'AI sign'], items: [['Earrings that do not match', 'AI sign'], ['A real place you know', 'Normal'], ['Too-smooth plastic skin', 'AI sign'], ['Normal blurry background', 'Normal']], explain: 'Look closely at small details' },
   ]},
   { zone: 'heart', name: 'Train Bot', sprite: 'robot', palette: 'heart', difficulty: 'medium', variants: [
-    { type: 'order', prompt: 'Teach an AI to spot cats 🐱', items: ['Collect cat photos', 'Tell it which are cats', 'Let it practise', 'Test it on new photos'], explain: 'AI learns from examples, then gets tested' },
-    { type: 'order', prompt: 'How a chatbot answers 💬', items: ['You type a question', 'AI reads it', 'It predicts words', 'Answer appears'], explain: 'Chatbots predict the next words' },
+    { type: 'match', prompt: 'Match the app to what its AI does', pairs: [['Google Maps', 'Predicts traffic'], ['YouTube', 'Suggests videos'], ['Google Lens', 'Reads text in photos'], ['Gmail', 'Blocks spam']], explain: 'AI is already in apps you use daily' },
+    { type: 'match', prompt: 'Match the app to what its AI does', pairs: [['Instagram', 'Face filters'], ['Swiggy', 'Delivery time guess'], ['Keyboard', 'Next-word suggestion'], ['Spotify', 'Song picks for you']], explain: 'AI is already in apps you use daily' },
   ]},
   { zone: 'heart', name: 'Deepfake Djinn', sprite: 'robot', palette: 'heart', difficulty: 'hard', guardian: true, variants: [
     { prompt: 'A chatbot tells you a "fact" that sounds wrong. You…', choices: ['Check a trusted source', 'Believe it', 'Share it everywhere', 'Argue with it'], answer: 'Check a trusted source', explain: 'AI can be confidently wrong' },
@@ -185,6 +185,7 @@ export const BOSS = {
   damage: { easy: 20, medium: 30, hard: 50 },
   pool: {
     easy: [
+      { prompt: 'Where should you check your 2nd PU results?', choices: ['The official board website', 'A random WhatsApp link', 'An Instagram page', 'A pop-up ad'], answer: 'The official board website' },
       { prompt: 'Which one is an INPUT device?', choices: ['Keyboard', 'Monitor', 'Speaker', 'Printer'], answer: 'Keyboard' },
       { prompt: 'What does “www” stand for?', choices: ['World Wide Web', 'Wide World Wifi', 'Web Without Wires', 'World Web Window'], answer: 'World Wide Web' },
       { prompt: 'The 🔒 lock in a browser’s address bar means…', choices: ['The connection is encrypted (HTTPS)', 'The site is a government site', 'The site is free', 'The site is fast'], answer: 'The connection is encrypted (HTTPS)' },
@@ -194,6 +195,7 @@ export const BOSS = {
       { prompt: 'Which one is a web browser?', choices: ['Google Chrome', 'Windows', 'WhatsApp', 'Excel'], answer: 'Google Chrome' },
     ],
     medium: [
+      { prompt: 'A site promises a "guaranteed CET rank" for ₹999. It is…', choices: ['A scam', 'A great deal', 'Official', 'Free money'], answer: 'A scam' },
       { prompt: 'n = 1\nRepeat 4 times:  n = n × 2\nn = ?', choices: ['16', '8', '32', '6'], answer: '16' },
       { prompt: '“Phishing” means…', choices: ['Fake messages that trick you into giving info', 'Catching fish online', 'A fast internet plan', 'A type of virus scan'], answer: 'Fake messages that trick you into giving info' },
       { prompt: 'Odd one out?', choices: ['MS Paint', 'Google Drive', 'Dropbox', 'OneDrive'], answer: 'MS Paint' },
@@ -202,6 +204,7 @@ export const BOSS = {
       { prompt: 'An AI trained ONLY on cat photos is shown a dog. It will most likely…', choices: ['Call it a cat', 'Say “dog” correctly', 'Refuse to answer', 'Draw the dog'], answer: 'Call it a cat' },
     ],
     hard: [
+      { prompt: 'A friend shares a "leaked board question paper" link. Best move?', choices: ['Do not open it, tell a teacher', 'Open it quickly', 'Share it with your class', 'Pay for the full paper'], answer: 'Do not open it, tell a teacher' },
       { prompt: 'Shift each letter BACK by 2:  E Q F G', choices: ['CODE', 'COPE', 'DOGE', 'CAFE'], answer: 'CODE' },
       { prompt: 'Computers store everything using only…', choices: ['0 and 1', 'A to Z', '1 to 10', 'Colours'], answer: '0 and 1' },
       { prompt: 'IF age ≥ 18 AND has_licence THEN drive.\nRiya is 19 with no licence. Can she drive?', choices: ['No', 'Yes', 'Only on Sundays', 'Only with a friend'], answer: 'No' },
