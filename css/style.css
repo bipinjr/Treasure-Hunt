@@ -1016,3 +1016,7 @@ body[data-zone] .stage::before, body[data-zone] .stage::after, body[data-zone] .
 .cw-clues { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 8px; font-size: 17px; max-width: 460px; }
 .cw-clues b { color: var(--gold); margin-right: 6px; }
 .cw-clues small { color: var(--muted); }
+
+/* crossword fits under the stage at 768px tall */
+.cw-grid { --cw: clamp(28px, 4vh, 44px); gap: 3px; }
+.cw-clues { font-size: 15px; gap: 6px; }
