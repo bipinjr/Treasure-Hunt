@@ -36,12 +36,12 @@ export function eventPhase(ev) {
   return ev.status;
 }
 
-// Finished first by total time (tie: fewer wrong), then unfinished by progress
+// Finished first by total time (tie: fewer wrong, then earlier finish), then unfinished by progress
 export function rank(players) {
   return [...players].sort((a, b) => {
     const fa = a.finished_at != null, fb = b.finished_at != null;
     if (fa !== fb) return fa ? -1 : 1;
-    if (fa) return a.total_ms - b.total_ms || a.wrong - b.wrong;
+    if (fa) return a.total_ms - b.total_ms || a.wrong - b.wrong || new Date(a.finished_at) - new Date(b.finished_at);
     return b.stage - a.stage || a.boss_hp - b.boss_hp || a.penalty_sec - b.penalty_sec || a.wrong - b.wrong;
   });
 }

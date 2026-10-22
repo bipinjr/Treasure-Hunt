@@ -4,9 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cavern of Code · Tech Quest</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="preload" href="fonts/pressstart-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/pixelify-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
 </head>
@@ -27,6 +26,7 @@
       <form id="join" class="panel join" autocomplete="off">
         <input id="name" class="field" maxlength="40" placeholder="Enter your full name" aria-label="Your name" required>
         <button class="btn" id="join-btn" type="submit">⚔ ENTER THE CAVERN</button>
+        <button class="btn ghost" id="practice-btn" type="button">🛡 Try a quick practice run</button>
         <p class="err" id="join-err" role="alert"></p>
       </form>
       <div class="rules">
@@ -65,6 +65,7 @@
       </div>
       <div class="track" id="track" aria-label="Progress"></div>
       <div class="timers">
+        <button class="btn ghost practice-only" id="exit-practice" style="padding:10px 12px;font-size:10px">EXIT PRACTICE</button>
         <button class="mute" id="mute" aria-label="Toggle sound" title="Toggle sound">🔊</button>
         <div class="hearts" id="hearts" aria-label="Hearts"></div>
         <div class="timer"><div class="lbl">Your time</div><div class="val" id="my-time">00:00</div><div class="pen" id="my-pen"></div></div>

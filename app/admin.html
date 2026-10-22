@@ -4,9 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gatekeeper · Cavern of Code</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="preload" href="fonts/pressstart-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/pixelify-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗝️</text></svg>">
 </head>
@@ -59,9 +58,12 @@
     </div>
 
     <div class="panel admin-card">
-      <h3>PLAYERS</h3>
+      <div class="row" style="justify-content:space-between">
+        <h3>PLAYERS</h3>
+        <button class="btn ghost" id="export" style="font-size:11px;padding:10px 14px">⬇ EXPORT CSV</button>
+      </div>
       <table class="admin-table">
-        <thead><tr><th>#</th><th>Player</th><th>Progress</th><th>Correct</th><th>Wrong</th><th>Time</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Player</th><th>Progress</th><th>Correct</th><th>Wrong</th><th>Penalty</th><th>Time</th><th></th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
@@ -107,13 +109,30 @@
       $('rows').innerHTML = r.map((p, i) => `<tr>
         <td>${i + 1}</td><td>${esc(p.name)}</td>
         <td>${p.finished_at ? '✔ Finished' : p.stage >= TOTAL_STAGES ? `Boss (${p.boss_hp} HP)` : `${p.stage}/12`}</td>
-        <td>${p.correct}</td><td>${p.wrong}</td>
+        <td>${p.correct}</td><td>${p.wrong}</td><td>${p.penalty_sec}s</td>
         <td>${p.finished_at ? fmt(p.total_ms) : '–'}</td>
-        <td><button data-id="${p.id}" data-n="${esc(p.name)}">Remove</button></td></tr>`).join('');
-      $('rows').querySelectorAll('button').forEach(b => b.onclick = async () => {
+        <td style="white-space:nowrap"><button class="adj" data-id="${p.id}" data-n="${esc(p.name)}" style="color:var(--gold);border-color:var(--line)">± Time</button>
+          <button class="del" data-id="${p.id}" data-n="${esc(p.name)}">Remove</button></td></tr>`).join('');
+      $('rows').querySelectorAll('.del').forEach(b => b.onclick = async () => {
         if (confirm(`Remove "${b.dataset.n}" from the game?`) && await call('admin_delete_player', { p_id: b.dataset.id })) refresh();
       });
+      $('rows').querySelectorAll('.adj').forEach(b => b.onclick = async () => {
+        const s = parseInt(prompt(`Seconds to add for "${b.dataset.n}" (use a negative number to refund):`, '10'), 10);
+        if (s && await call('admin_adjust_time', { p_id: b.dataset.id, p_seconds: s })) { msg(`${s > 0 ? '+' : ''}${s}s applied to ${b.dataset.n}.`); refresh(); }
+      });
     }
+
+    $('export').onclick = () => {
+      const r = rank(players);
+      const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const lines = [['Rank', 'Name', 'Status', 'Monsters cleared', 'Boss HP', 'Correct', 'Wrong', 'Penalty (s)', 'Total time', 'Total ms', 'Joined', 'Finished']]
+        .concat(r.map((p, i) => [i + 1, p.name, p.finished_at ? 'Finished' : 'Not finished', p.stage, p.boss_hp, p.correct, p.wrong, p.penalty_sec,
+          p.finished_at ? fmt(p.total_ms) : '', p.total_ms ?? '', p.created_at, p.finished_at ?? '']));
+      const blob = new Blob(['﻿' + lines.map(l => l.map(cell).join(',')).join('\r\n')], { type: 'text/csv' });
+      const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `cavern-of-code-results-${new Date().toISOString().slice(0, 16).replace(':', '')}.csv` });
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
 
     function tick() {
       if (!ev) return;

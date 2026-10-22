@@ -101,3 +101,33 @@ export const BOSS = {
     ],
   },
 };
+
+// Practice run: separate warm-up questions so practising never leaks the real ones
+export const PRACTICE = {
+  word: 'BCA',
+  enemies: [
+    { zone: 'crypt', name: 'Training Dummy', sprite: 'skeleton', difficulty: 'easy', variants: [
+      { prompt: 'Shift each letter BACK by 1 to decode:  B C D', choices: ['ABC', 'BCD', 'CDE', 'XYZ'], answer: 'ABC', explain: 'B→A, C→B, D→C' },
+    ]},
+    { zone: 'forge', name: 'Practice Slime', sprite: 'magma', difficulty: 'easy', variants: [
+      { prompt: 'x = 1\nRepeat 2 times:  x = x + 1\nWhat is x now?', choices: ['3', '2', '4', '1'], answer: '3', explain: '1 → 2 → 3' },
+    ]},
+    { zone: 'shields', name: 'Rookie Bat', sprite: 'bat', palette: 'shields', difficulty: 'easy', variants: [
+      { prompt: 'Which one is SAFE to share in public?', choices: ['Your favourite movie', 'Your OTP', 'Your ATM PIN', 'Your password'], answer: 'Your favourite movie', explain: 'Never share OTPs, PINs or passwords' },
+    ]},
+  ],
+  boss: {
+    easy: [
+      { prompt: 'Which one is an OUTPUT device?', choices: ['Monitor', 'Keyboard', 'Mouse', 'Microphone'], answer: 'Monitor' },
+      { prompt: 'Which app is used to send messages?', choices: ['WhatsApp', 'Calculator', 'Camera', 'Clock'], answer: 'WhatsApp' },
+    ],
+    medium: [
+      { prompt: 'Binary 10 equals…', choices: ['2', '10', '1', '3'], answer: '2' },
+      { prompt: 'A strong password should be…', choices: ['Long and mixed', 'Your name', '123456', 'Your birthday'], answer: 'Long and mixed' },
+    ],
+    hard: [
+      { prompt: 'Shift each letter BACK by 1:  D B U', choices: ['CAT', 'DOG', 'BAT', 'CUT'], answer: 'CAT' },
+      { prompt: 'n = 3\nRepeat 2 times:  n = n × 2\nn = ?', choices: ['12', '6', '9', '8'], answer: '12' },
+    ],
+  },
+};

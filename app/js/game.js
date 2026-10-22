@@ -1,5 +1,5 @@
 import { sb, syncClock, now, fmt, eventEnd, eventPhase, rank, progressPct, esc, fetchEvent, fetchPlayers, flipList, confetti, embers, TOTAL_STAGES } from './common.js';
-import { ZONES, ENEMIES, BOSS, RUNE_WORD } from './questions.js';
+import { ZONES, ENEMIES, BOSS, RUNE_WORD, PRACTICE } from './questions.js';
 import { spriteSVG } from './sprites.js';
 import { sfx } from './sfx.js';
 
@@ -23,6 +23,14 @@ let bossIntroDone = false;
 let results = [];       // per-stage 'ok' | 'miss', kept locally for the rune bar
 let endTimer = null;
 let streak = 0;
+let practice = false;   // local-only warm-up run: no server, not on the leaderboard
+let pev = null;         // practice event clock
+
+const enemies = () => practice ? PRACTICE.enemies : ENEMIES;
+const stages = () => practice ? PRACTICE.enemies.length : TOTAL_STAGES;
+const bossPool = d => practice ? PRACTICE.boss[d] : BOSS.pool[d];
+const runeWord = () => practice ? PRACTICE.word : RUNE_WORD;
+const curEv = () => practice ? pev : ev;
 
 // ---------- boot ----------
 embers($('embers'));
@@ -58,13 +66,14 @@ function loadResults() {
   try { results = JSON.parse(localStorage.getItem('tq_res_' + cred.id)) || []; } catch { results = []; }
 }
 function saveResults() {
+  if (practice) return;
   try { localStorage.setItem('tq_res_' + cred.id, JSON.stringify(results)); } catch {}
 }
 
 async function refreshPlayers() {
   players = await fetchPlayers();
   // admin reset deletes everyone: send this PC back to the name screen
-  if (me && !players.some(p => p.id === me.id) && ev?.status === 'waiting') { forget(); clearInterval(endTimer); route(); return; }
+  if (!practice && me && !players.some(p => p.id === me.id) && ev?.status === 'waiting') { forget(); clearInterval(endTimer); route(); return; }
   if (screen === 'lobby') renderLobby();
   if (screen === 'game') renderBoard();
 }
@@ -76,6 +85,7 @@ function show(name) {
 }
 
 function route() {
+  if (practice) return;
   if (!me) { show('name'); setTimeout(() => $('name')?.focus(), 50); return; }
   if (me.finished_at) { if (screen !== 'end') victory(); return; }
   const phase = eventPhase(ev);
@@ -130,21 +140,21 @@ async function countdown() {
   }
 }
 
-function zoneOf(stage) { return ZONES.find(z => z.id === ENEMIES[stage].zone); }
+function zoneOf(stage) { return ZONES.find(z => z.id === enemies()[stage].zone); }
 function setAccent(c) { document.documentElement.style.setProperty('--accent', c); }
 
 function renderTrack() {
   let h = '';
-  for (let i = 0; i < TOTAL_STAGES; i++) {
+  for (let i = 0; i < stages(); i++) {
     const cls = results[i] === 'ok' ? 'done' : results[i] === 'miss' ? 'miss' : i === me.stage ? 'now' : '';
     h += `<span class="pip ${cls} ${i && i % 3 === 0 ? 'gap' : ''}"></span>`;
   }
-  h += `<span class="skull ${me.stage >= TOTAL_STAGES ? 'now' : ''}">💀</span>`;
+  h += `<span class="skull ${me.stage >= stages() ? 'now' : ''}">💀</span>`;
   $('track').innerHTML = h;
 }
 function renderRunes() {
-  $('runes').innerHTML = [...RUNE_WORD].map((ch, i) =>
-    `<span class="rune ${results[i] === 'ok' ? 'got' : results[i] === 'miss' ? 'lost' : ''} ${i === 7 || i === 9 ? 'gap' : ''}" data-i="${i}">${results[i] === 'miss' ? '✕' : ch}</span>`).join('');
+  $('runes').innerHTML = [...runeWord()].map((ch, i) =>
+    `<span class="rune ${results[i] === 'ok' ? 'got' : results[i] === 'miss' ? 'lost' : ''} ${!practice && (i === 7 || i === 9) ? 'gap' : ''}" data-i="${i}">${results[i] === 'miss' ? '✕' : ch}</span>`).join('');
 }
 function renderHearts(refill) {
   $('hearts').innerHTML = [0, 1, 2].map(i => spriteSVG('heart', null, i < hearts ? (refill ? 'refill' : '') : 'lost')).join('');
@@ -154,11 +164,13 @@ function spawn() {
   busy = false;
   const enemyEl = $('enemy');
   enemyEl.className = 'actor';
-  if (me.stage < TOTAL_STAGES) {
-    const e = ENEMIES[me.stage], z = zoneOf(me.stage);
+  if (me.stage < stages()) {
+    const e = enemies()[me.stage], z = zoneOf(me.stage);
     setAccent(z.accent);
-    $('zone-name').textContent = z.name; $('zone-domain').textContent = `Zone ${ZONES.indexOf(z) + 1} · ${z.domain}`;
-    if (shownZone !== z.id) { shownZone = z.id; banner(z.name, `Zone ${ZONES.indexOf(z) + 1} · ${z.domain}`); sfx.zone(); }
+    const title = practice ? 'Training Grounds' : z.name;
+    const sub = practice ? 'Practice run · does not count' : `Zone ${ZONES.indexOf(z) + 1} · ${z.domain}`;
+    $('zone-name').textContent = title; $('zone-domain').textContent = sub;
+    if (shownZone !== z.id) { shownZone = z.id; banner(title, sub); sfx.zone(); }
     enemyEl.querySelector('.body').innerHTML = spriteSVG(e.sprite, e.palette);
     $('nameplate').innerHTML = `<div class="n">${esc(e.name)}</div><div class="d ${e.difficulty}">${e.difficulty}</div>`;
     void enemyEl.offsetWidth; enemyEl.classList.add('enter');
@@ -196,7 +208,7 @@ function renderDiffPicker() {
 
 function chooseDiff(diff) {
   if (busy || current) return;
-  const pool = BOSS.pool[diff];
+  const pool = bossPool(diff);
   let avail = pool.filter(q => !usedBoss.has(q.prompt));
   if (!avail.length) avail = pool; // shortcut: pool exhausted, reuse questions
   const q = pick(avail);
@@ -220,7 +232,7 @@ addEventListener('keydown', e => {
   const n = parseInt(e.key, 10);
   if (!n) return;
   if (current && n <= current.choices.length) answer(n - 1);
-  else if (!current && me.stage >= TOTAL_STAGES && n <= 3) chooseDiff(['easy', 'medium', 'hard'][n - 1]);
+  else if (!current && me.stage >= stages() && n <= 3) chooseDiff(['easy', 'medium', 'hard'][n - 1]);
 });
 
 async function answer(i) {
@@ -241,7 +253,7 @@ async function answer(i) {
 
   const before = { stage: me.stage, hp: me.boss_hp };
   const req = send(before, ok, diff);
-  const boss = before.stage >= TOTAL_STAGES;
+  const boss = before.stage >= stages();
 
   if (ok) {
     streak++;
@@ -298,6 +310,7 @@ function showCombo(n) {
 
 // Retries network failures; returns new player row, 'timeup', or null
 async function send(before, ok, diff) {
+  if (practice) return practiceAnswer(ok, diff);
   for (let attempt = 0; attempt < 4; attempt++) {
     const { data, error } = await sb.rpc('submit_answer', { p_id: cred.id, p_token: cred.token, p_stage: before.stage, p_hp: before.hp, p_correct: ok, p_diff: diff || null });
     if (!error) return data;
@@ -308,6 +321,39 @@ async function send(before, ok, diff) {
   const r = await sb.rpc('get_player', { p_id: cred.id, p_token: cred.token });
   return r.data || null;
 }
+
+// Mirrors submit_answer in SQL for the local practice run
+function practiceAnswer(ok, diff) {
+  const p = { ...me };
+  if (p.stage < stages()) { p.stage++; if (ok) p.correct++; else { p.wrong++; p.penalty_sec += 10; } }
+  else if (ok) {
+    p.correct++;
+    p.boss_hp = Math.max(0, p.boss_hp - BOSS.damage[diff]);
+    if (!p.boss_hp) { p.finished_at = new Date(now()).toISOString(); p.total_ms = now() - new Date(pev.started_at).getTime() + p.penalty_sec * 1000; }
+  } else { p.wrong++; p.penalty_sec += 10; }
+  return p;
+}
+
+function startPractice() {
+  practice = true;
+  pev = { status: 'running', started_at: new Date(now()).toISOString(), duration_sec: 300 };
+  me = { id: 'practice', name: $('name').value.trim() || 'Adventurer', stage: 0, boss_hp: 100, correct: 0, wrong: 0, penalty_sec: 0, created_at: pev.started_at, finished_at: null, total_ms: null };
+  results = []; hearts = 3; shownZone = null; bossIntroDone = false; usedBoss = new Set(); streak = 0;
+  document.body.classList.add('practice');
+  screen = null;
+  startGame();
+}
+
+function exitPractice() {
+  practice = false; pev = null; me = null; streak = 0; current = null; busy = false;
+  showCombo(0);
+  document.body.classList.remove('practice');
+  clearInterval(endTimer);
+  screen = null;
+  route();
+}
+$('practice-btn').onclick = startPractice;
+$('exit-practice').onclick = exitPractice;
 
 // ---------- effects ----------
 function replay(el, cls) { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; }
@@ -385,7 +431,7 @@ async function killEnemy(stage) {
   const slot = $('runes').querySelector(`[data-i="${stage}"]`);
   const from = e.getBoundingClientRect(), to = slot.getBoundingClientRect();
   const f = document.createElement('div');
-  f.className = 'flyer'; f.textContent = RUNE_WORD[stage];
+  f.className = 'flyer'; f.textContent = runeWord()[stage];
   f.style.left = from.left + from.width / 2 + 'px'; f.style.top = from.top + 'px';
   document.body.append(f);
   requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -418,7 +464,7 @@ async function enemyStrike() {
 function renderBoard() {
   const ranked = rank(players);
   const myIdx = ranked.findIndex(p => p.id === me?.id);
-  $('my-rank').textContent = myIdx >= 0 ? `#${myIdx + 1} / ${ranked.length}` : '–';
+  $('my-rank').textContent = practice ? 'Practice' : myIdx >= 0 ? `#${myIdx + 1} / ${ranked.length}` : '–';
   flipList($('lb'), ranked.slice(0, 10), p => p.id, (p, i) => `
     <span class="r">${i + 1}</span>
     <span class="nm">${esc(p.name)}</span>
@@ -428,15 +474,16 @@ function renderBoard() {
 }
 
 function myElapsed() {
-  if (!me || !ev?.started_at) return 0;
+  const e = curEv();
+  if (!me || !e?.started_at) return 0;
   if (me.finished_at) return me.total_ms;
-  const start = Math.max(new Date(me.created_at).getTime(), new Date(ev.started_at).getTime());
+  const start = Math.max(new Date(me.created_at).getTime(), new Date(e.started_at).getTime());
   return now() - start + me.penalty_sec * 1000;
 }
 
 function tick() {
   if (screen !== 'game') return;
-  const left = eventEnd(ev) - now();
+  const left = eventEnd(curEv()) - now();
   $('ev-time').textContent = fmt(left);
   $('ev-timer').classList.toggle('low', left < 60000);
   $('my-time').textContent = fmt(myElapsed());
@@ -446,6 +493,12 @@ function tick() {
 
 // ---------- end screens ----------
 function stats() {
+  if (practice) return `<div class="stats">
+    <div class="stat"><div class="v">${me.finished_at ? fmt(me.total_ms) : `${me.stage}/${stages()}`}</div><div class="l">${me.finished_at ? 'Practice time' : 'Monsters slain'}</div></div>
+    <div class="stat"><div class="v">${me.boss_hp}</div><div class="l">Boss HP left</div></div>
+    <div class="stat"><div class="v">${me.correct}</div><div class="l">Correct</div></div>
+    <div class="stat"><div class="v">${me.wrong}</div><div class="l">Wrong (+${me.penalty_sec}s)</div></div>
+  </div>`;
   const ranked = rank(players);
   const r = ranked.findIndex(p => p.id === me.id) + 1;
   return `<div class="stats">
@@ -456,7 +509,21 @@ function stats() {
   </div>`;
 }
 
+function practiceEnd(won) {
+  show('end');
+  setAccent(won ? '#3ddc84' : '#ff4d5e');
+  if (won) { confetti($('confetti'), 2); sfx.victory(); } else sfx.lose();
+  $('end').innerHTML = `
+    <div class="kicker">Practice ${won ? 'complete' : 'over'}</div>
+    <h2 class="title">${won ? 'YOU ARE READY!' : 'TIME IS UP'}</h2>
+    <p class="sub" style="color:var(--muted);font-size:20px">Practice runs don't count. The real cavern has 12 monsters and new questions.</p>
+    ${stats()}
+    <div class="row" style="justify-content:center;margin-top:22px"><button class="btn" id="exit-practice-end">⚔ BACK TO THE GATE</button></div>`;
+  $('exit-practice-end').onclick = exitPractice;
+}
+
 function victory() {
+  if (practice) return practiceEnd(true);
   show('end');
   setAccent('#f2c14e');
   $('end').innerHTML = `
@@ -476,6 +543,7 @@ function victory() {
 
 function timeUp() {
   if (screen === 'end') return;
+  if (practice) return practiceEnd(false);
   show('end');
   setAccent('#ff4d5e');
   sfx.lose();
