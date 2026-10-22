@@ -972,3 +972,28 @@ body[data-zone] .stage::before, body[data-zone] .stage::after, body[data-zone] .
 .slot { min-height: 40px; padding: 8px 10px; }
 .tile { padding: 9px 14px; font-size: 17px; }
 @media (max-width: 1100px) { .sort-list { grid-template-columns: 1fr; } }
+
+/* end screen fits 768px: compact results column + paired feedback questions */
+.end { padding: 18px 24px; row-gap: 6px; }
+.end > .kicker { font-size: 12px; }
+.end > .title { font-size: clamp(22px, 2.4vw, 30px); margin: 0 0 6px; }
+.end > .sub { margin: 0 0 6px; font-size: 17px !important; }
+.end .chest { width: 120px; height: 100px; margin-bottom: 0; } .end .chest svg { width: 120px; } .end .chest .clid { bottom: 52px; } .end .chest .rays { width: 300px; height: 300px; margin: -150px; }
+.end .clue { margin: 4px auto 10px; padding: 10px 14px; font-size: 17px; }
+.end .stats { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.end .stat { padding: 8px 4px; } .end .stat .v { font-size: 18px; } .end .stat .l { font-size: 13px; }
+.end .row { margin-top: 10px !important; }
+.feedback { gap: 8px 14px; padding: 12px 14px; }
+.feedback h3 { font-size: 16px; }
+.feedback .fb-sub { display: none; }
+.feedback .fb-q:has(textarea), .feedback .fb-q:has(.fb-text) { grid-column: auto; }
+.feedback .fb-q:has(input[name="plan"]) { grid-column: 1 / -1; }
+.fb-q legend { font-size: 14px; margin-bottom: 2px; }
+.stars label { font-size: 22px; }
+.chips { gap: 6px; } .chips label span { padding: 4px 10px; font-size: 13px; }
+.feedback textarea { height: 42px; resize: none; font-size: 15px; padding: 8px 10px; }
+.fb-text { font-size: 15px; padding: 8px 10px; }
+.feedback .btn { padding: 10px 18px; font-size: 15px; }
+
+/* time-up screen has a subtitle row, so its feedback column starts one row lower */
+.end:has(> .sub) > .feedback { grid-row: 4 / span 3; }
