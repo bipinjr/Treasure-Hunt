@@ -665,7 +665,7 @@ function practiceEnd(won) {
 }
 
 // ---------- feedback (real runs only) ----------
-const FB_STARS = [['overall', 'How is the overall experience?', true], ['fun', 'How fun was the game?'], ['clarity', 'How clear were the questions and zone guides?']];
+const FB_STARS = [['overall', 'How is the overall experience?', true], ['fun', 'How fun was the game?'], ['clarity', 'How clear were the questions and zone guides?'], ['event', 'How was your overall experience of the BCA Tech Quest event?', true]];
 const fbKey = () => 'tq_fb_' + cred?.id;
 function feedbackForm() {
   let sent = false;
@@ -695,10 +695,10 @@ function bindFeedback() {
   f.onsubmit = async e => {
     e.preventDefault();
     const d = new FormData(f), msg = f.querySelector('.fb-msg');
-    if (!d.get('overall')) { msg.textContent = 'Please rate the overall experience.'; return; }
+    if (!d.get('overall') || !d.get('event')) { msg.textContent = 'Please rate the overall experience and the BCA event.'; return; }
     f.querySelector('button').disabled = true; msg.textContent = 'Sending…';
     const num = k => d.get(k) ? +d.get(k) : null;
-    const { error } = await sb.rpc('submit_feedback', { p_id: cred.id, p_token: cred.token, p_overall: num('overall'), p_fun: num('fun'), p_clarity: num('clarity'), p_interest: d.get('interest') || '', p_comment: d.get('comment') || '' });
+    const { error } = await sb.rpc('submit_feedback', { p_id: cred.id, p_token: cred.token, p_overall: num('overall'), p_fun: num('fun'), p_clarity: num('clarity'), p_interest: d.get('interest') || '', p_comment: d.get('comment') || '', p_event: num('event') });
     if (error) { f.querySelector('button').disabled = false; msg.textContent = 'Could not send. Check the internet and try again.'; return; }
     try { localStorage.setItem(fbKey(), '1'); } catch {}
     f.outerHTML = '<div class="feedback done"><p>✔ Thanks for your feedback!</p></div>';

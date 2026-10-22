@@ -103,7 +103,7 @@
       <div class="ledger fb-ledger" id="fb-summary"></div>
       <div class="table-scroll">
         <table class="admin-table">
-          <thead><tr><th>Player</th><th>Overall experience</th><th>Fun</th><th>Clarity</th><th>More interested?</th><th>Comment</th><th>Sent</th></tr></thead>
+          <thead><tr><th>Player</th><th>Overall experience</th><th>BCA event</th><th>Fun</th><th>Clarity</th><th>More interested?</th><th>Comment</th><th>Sent</th></tr></thead>
           <tbody id="fb-rows"></tbody>
         </table>
       </div>
@@ -320,18 +320,18 @@
       const cnt = v => feedback.filter(f => f.interest === v).length;
       $('fb-count').textContent = `(${feedback.length})`;
       $('fb-summary').innerHTML = [
-        ['Responses', feedback.length], ['Overall experience', `${avg('overall')} / 5`], ['Fun', `${avg('fun')} / 5`], ['Clarity', `${avg('clarity')} / 5`],
+        ['Responses', feedback.length], ['Overall experience', `${avg('overall')} / 5`], ['BCA event', `${avg('event_rating')} / 5`], ['Fun', `${avg('fun')} / 5`], ['Clarity', `${avg('clarity')} / 5`],
         ['More interested: yes', cnt('Yes')], ['Maybe', cnt('Maybe')], ['No', cnt('No')],
       ].map(([l, v]) => `<div><b>${v}</b><span>${l}</span></div>`).join('');
       $('fb-rows').innerHTML = feedback.length ? feedback.map(f => `<tr>
-        <td class="pname">${esc(f.name)}</td><td class="stars-txt">${starsTxt(f.overall)}</td><td class="stars-txt">${starsTxt(f.fun)}</td><td class="stars-txt">${starsTxt(f.clarity)}</td>
+        <td class="pname">${esc(f.name)}</td><td class="stars-txt">${starsTxt(f.overall)}</td><td class="stars-txt">${starsTxt(f.event_rating)}</td><td class="stars-txt">${starsTxt(f.fun)}</td><td class="stars-txt">${starsTxt(f.clarity)}</td>
         <td>${f.interest || '–'}</td><td class="fb-comment">${f.comment ? esc(f.comment) : '–'}</td><td>${new Date(f.created_at).toLocaleTimeString()}</td></tr>`).join('')
-        : '<tr><td colspan="7" class="empty-row">No feedback yet. It appears here as players finish.</td></tr>';
+        : '<tr><td colspan="8" class="empty-row">No feedback yet. It appears here as players finish.</td></tr>';
     }
     $('fb-export').onclick = () => {
       const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-      const lines = [['Name', 'Overall experience (1-5)', 'Fun (1-5)', 'Clarity (1-5)', 'More interested in CS/BCA', 'Comment', 'Sent at']]
-        .concat(feedback.map(f => [f.name, f.overall, f.fun ?? '', f.clarity ?? '', f.interest ?? '', f.comment ?? '', f.created_at]));
+      const lines = [['Name', 'Overall experience (1-5)', 'BCA event experience (1-5)', 'Fun (1-5)', 'Clarity (1-5)', 'More interested in CS/BCA', 'Comment', 'Sent at']]
+        .concat(feedback.map(f => [f.name, f.overall, f.event_rating ?? '', f.fun ?? '', f.clarity ?? '', f.interest ?? '', f.comment ?? '', f.created_at]));
       const blob = new Blob(['﻿' + lines.map(l => l.map(cell).join(',')).join('\r\n')], { type: 'text/csv' });
       const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `cavern-of-code-feedback-${stamp()}.csv` });
       a.click();

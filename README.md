@@ -34,7 +34,7 @@ The landing page has an "Organiser login" link at the bottom.
 
 Extras: chiptune sound effects (🔊 button in the HUD to mute), combo streaks, letters that drop into a rune bar, a confetti chest at the end. Fonts are bundled in `fonts/`, so nothing depends on Google Fonts.
 
-**Feedback:** after the chest (or when time runs out) players get 5 questions: overall experience (required, 1–5 stars), fun, clarity, more interested in CS/BCA (Yes/Maybe/No), and an optional comment. Answers are stored separately with the player's name, shown in the admin page's Player feedback panel, and exported with **Feedback CSV**. Reset all keeps feedback; use Clear feedback to delete it.
+**Feedback:** after the chest (or when time runs out) players get 6 questions: overall experience (required, 1–5 stars), overall experience of the BCA Tech Quest event (required, 1–5 stars), fun, clarity, more interested in CS/BCA (Yes/Maybe/No), and an optional comment. Answers are stored separately with the player's name, shown in the admin page's Player feedback panel, and exported with **Feedback CSV**. Reset all keeps feedback; use Clear feedback to delete it.
 
 ## Edit questions
 `js/questions.js`. `answer` must match one of `choices` exactly.
