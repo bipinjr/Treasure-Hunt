@@ -187,7 +187,7 @@ async function countdown() {
     c.textContent = n;
     $('stage').append(c);
     n.length > 1 ? sfx.go() : sfx.count();
-    await sleep(n.length > 1 ? 700 : 650);
+    await sleep(n.length > 1 ? 450 : 350);
     c.remove();
   }
 }
@@ -353,15 +353,15 @@ async function resolve(ok, retry, reopen) {
     results[before.stage] = ok ? 'bonus' : 'skip'; saveResults();
     if (ok) {
       animate($('knight'), 'attack', 450);
-      await sleep(250);
+      await sleep(150);
       $('enemy').classList.add('die');
       burst($('enemy'), 34, ['#f2c14e', '#ffdf8a', '#fff', '#3ddc84']);
       floatText(`−${BONUS_SEC}s`, $('enemy'));
       sfx.victory();
-      await sleep(900);
+      await sleep(500);
     } else {
       sfx.click();
-      await sleep(1300);
+      await sleep(700);
     }
   } else if (ok) {
     streak++;
@@ -372,7 +372,7 @@ async function resolve(ok, retry, reopen) {
     streak = 0; showCombo(0);
     await enemyStrike();
     if (!boss && !retry) { results[before.stage] = 'miss'; saveResults(); renderRunes(); }
-    await sleep(900); // time to read the right answer, or a short lock before the second try
+    await sleep(retry ? 250 : 700); // a moment to read the right answer; a quick lock before the second try
   }
 
   const res = await req;
@@ -398,7 +398,7 @@ async function resolve(ok, retry, reopen) {
       victory();
       return;
     }
-    await sleep(ok ? 500 : 0);
+    await sleep(ok ? 200 : 0);
     renderDiffPicker();
     busy = false;
     return;
@@ -410,7 +410,7 @@ async function resolve(ok, retry, reopen) {
 async function walk() {
   const st = $('stage');
   st.classList.add('walking'); $('knight').classList.add('walking');
-  await sleep(600);
+  await sleep(300);
   st.classList.remove('walking'); $('knight').classList.remove('walking');
 }
 
@@ -478,9 +478,13 @@ $('exit-practice').onclick = exitPractice;
 // ---------- tab-switch policy ----------
 // Hiding the tab during a running round is a strike; the server restarts the run on the 3rd.
 let pendingWarn = null;
+// a refresh or closing the tab also turns the page "hidden": that is not a tab switch
+let unloading = false;
+addEventListener('beforeunload', () => { unloading = true; });
+addEventListener('pagehide', () => { unloading = true; });
 document.addEventListener('visibilitychange', async () => {
   if (document.hidden) {
-    if (practice || !cred || !me || me.finished_at || screen !== 'game' || eventPhase(ev) !== 'open') return;
+    if (unloading || practice || !cred || !me || me.finished_at || screen !== 'game' || eventPhase(ev) !== 'open') return;
     const before = me;
     const { data } = await sb.rpc('report_tab_switch', { p_id: cred.id, p_token: cred.token });
     if (!data?.id) return;
@@ -596,7 +600,7 @@ function toast(msg) {
 async function heroStrike(dmg) {
   const k = $('knight'), e = $('enemy');
   animate(k, 'attack', 450);
-  await sleep(180);
+  await sleep(120);
   dmg ? sfx.bossHit() : sfx.slash();
   const sl = document.createElement('div');
   const p = centerIn(e, $('stage'));
@@ -606,7 +610,7 @@ async function heroStrike(dmg) {
   burst(e, 14);
   floatText(dmg ? `-${dmg}` : 'CRIT!', e);
   if (dmg) shake($('stage'));
-  await sleep(450);
+  await sleep(250);
 }
 
 async function killEnemy(rune) {
@@ -624,7 +628,7 @@ async function killEnemy(rune) {
   requestAnimationFrame(() => requestAnimationFrame(() => {
     f.style.transform = `translate(${to.left - from.left - from.width / 2 + 8}px, ${to.top - from.top}px) scale(.8)`;
   }));
-  await sleep(780);
+  await sleep(450);
   f.remove();
   sfx.coin();
   renderRunes();
@@ -635,7 +639,7 @@ async function killEnemy(rune) {
 async function enemyStrike() {
   const k = $('knight'), e = $('enemy');
   animate(e, 'e-attack', 450);
-  await sleep(200);
+  await sleep(120);
   animate(k, 'hurt', 700);
   sfx.hurt();
   flash('rgba(255,40,60,.45)');
@@ -643,8 +647,8 @@ async function enemyStrike() {
   floatText('+10s', k, true);
   hearts--;
   renderHearts();
-  if (hearts <= 0) { await sleep(500); hearts = 3; renderHearts(true); floatText('Knight recovers!', k); }
-  await sleep(450);
+  if (hearts <= 0) { await sleep(300); hearts = 3; renderHearts(true); floatText('Knight recovers!', k); }
+  await sleep(250);
 }
 
 // ---------- leaderboard + timers ----------

@@ -57,7 +57,7 @@ export const ENEMIES = [
     { type: 'shoot', prompt: 'Shoot what we save as NUMBERS!', good: ['Price', 'Marks', 'Age'], bad: ['Name', 'Email', 'Phone number', 'City'], explain: 'Numbers are things you add or compare' },
   ]},
   { zone: 'crypt', name: 'Byte Spider', sprite: 'spider', difficulty: 'medium', variants: [
-    { type: 'order', prompt: 'Smallest file to biggest 📦', items: ['A text message', 'A photo', 'A song', 'A full movie'], explain: 'Video takes the most space' },
+    { type: 'order', prompt: 'Smallest file to biggest 📦', items: ['A text message', 'A song', 'A full movie', 'A whole phone backup'], explain: 'A backup holds everything, so it is the biggest' },
     { type: 'order', prompt: 'Smallest to biggest storage 📦', items: ['KB', 'MB', 'GB', 'TB'], explain: 'Kilo < Mega < Giga < Tera' },
   ]},
   { zone: 'crypt', name: 'Number Ghoul', sprite: 'mage', difficulty: 'medium', variants: [
@@ -163,7 +163,7 @@ export const ENEMIES = [
     { prompt: 'Best way to use AI for board exam revision? 📚', choices: ['Ask it to quiz you on a chapter', 'Copy its answers in the exam', 'Ask it to guess the paper', 'Skip studying'], answer: 'Ask it to quiz you on a chapter', explain: 'Use AI as a study buddy' },
   ]},
   { zone: 'heart', name: 'Mirage Mind', sprite: 'mage', palette: 'heart', difficulty: 'medium', variants: [
-    { type: 'sort', prompt: 'Is it a sign of an AI-made photo?', labels: ['Normal', 'AI sign'], items: [['Six fingers on a hand', 'AI sign'], ['Natural shadows', 'Normal'], ['Melted, unreadable text', 'AI sign'], ['Clear faces of real friends', 'Normal']], explain: 'Hands and text often look odd in AI images' },
+    { type: 'sort', prompt: 'Is it a sign of an AI-made photo?', labels: ['Normal', 'AI sign'], items: [['Six fingers on a hand', 'AI sign'], ['Natural shadows', 'Normal'], ['Melted, unreadable text', 'AI sign'], ['A photo you took yourself', 'Normal']], explain: 'Hands and text often look odd in AI images' },
     { type: 'sort', prompt: 'Is it a sign of an AI-made photo?', labels: ['Normal', 'AI sign'], items: [['Earrings that do not match', 'AI sign'], ['A real place you know', 'Normal'], ['Too-smooth plastic skin', 'AI sign'], ['Normal blurry background', 'Normal']], explain: 'Look closely at small details' },
   ]},
   { zone: 'heart', name: 'Train Bot', sprite: 'robot', palette: 'heart', difficulty: 'medium', variants: [
@@ -191,23 +191,23 @@ export const BOSS = {
       { prompt: 'The 🔒 lock in a browser’s address bar means…', choices: ['The connection is encrypted (HTTPS)', 'The site is a government site', 'The site is free', 'The site is fast'], answer: 'The connection is encrypted (HTTPS)' },
       { prompt: 'ChatGPT is an example of…', choices: ['A generative AI chatbot', 'An antivirus', 'An operating system', 'A web browser'], answer: 'A generative AI chatbot' },
       { prompt: 'Shift each letter BACK by 1:  J D F', choices: ['ICE', 'HAT', 'JOB', 'ACE'], answer: 'ICE' },
-      { prompt: 'Binary 11 equals…', choices: ['3', '11', '2', '4'], answer: '3' },
+      { prompt: 'Which of these is a search engine?', choices: ['Google', 'Excel', 'Paint', 'Calculator'], answer: 'Google' },
       { prompt: 'Which one is a web browser?', choices: ['Google Chrome', 'Windows', 'WhatsApp', 'Excel'], answer: 'Google Chrome' },
     ],
     medium: [
       { prompt: 'A site promises a "guaranteed CET rank" for ₹999. It is…', choices: ['A scam', 'A great deal', 'Official', 'Free money'], answer: 'A scam' },
       { prompt: 'n = 1\nRepeat 4 times:  n = n × 2\nn = ?', choices: ['16', '8', '32', '6'], answer: '16' },
       { prompt: '“Phishing” means…', choices: ['Fake messages that trick you into giving info', 'Catching fish online', 'A fast internet plan', 'A type of virus scan'], answer: 'Fake messages that trick you into giving info' },
-      { prompt: 'Odd one out?', choices: ['MS Paint', 'Google Drive', 'Dropbox', 'OneDrive'], answer: 'MS Paint' },
+      { prompt: 'Odd one out: which is NOT a web browser?', choices: ['Excel', 'Chrome', 'Firefox', 'Edge'], answer: 'Excel' },
       { prompt: 'Which one is safest to post online?', choices: ['Your favourite movie', 'Your OTP', 'Your home address', 'Your ATM PIN'], answer: 'Your favourite movie' },
       { prompt: 'Two-factor authentication (2FA) adds…', choices: ['A second check, like an OTP', 'A second password field only', 'Faster login', 'A bigger font'], answer: 'A second check, like an OTP' },
       { prompt: 'An AI trained ONLY on cat photos is shown a dog. It will most likely…', choices: ['Call it a cat', 'Say “dog” correctly', 'Refuse to answer', 'Draw the dog'], answer: 'Call it a cat' },
     ],
     hard: [
       { prompt: 'A friend shares a "leaked board question paper" link. Best move?', choices: ['Do not open it, tell a teacher', 'Open it quickly', 'Share it with your class', 'Pay for the full paper'], answer: 'Do not open it, tell a teacher' },
-      { prompt: 'Shift each letter BACK by 2:  E Q F G', choices: ['CODE', 'COPE', 'DOGE', 'CAFE'], answer: 'CODE' },
+      { prompt: 'Move each letter back by 1:  B Q Q', choices: ['APP', 'ADD', 'ABC', 'AIR'], answer: 'APP' },
       { prompt: 'Computers store everything using only…', choices: ['0 and 1', 'A to Z', '1 to 10', 'Colours'], answer: '0 and 1' },
-      { prompt: 'IF age ≥ 18 AND has_licence THEN drive.\nRiya is 19 with no licence. Can she drive?', choices: ['No', 'Yes', 'Only on Sundays', 'Only with a friend'], answer: 'No' },
+      { prompt: 'IF age ≥ 18 AND has_licence THEN drive.\nArjun is 19 with no licence. Can he drive?', choices: ['No', 'Yes', 'Only on Sundays', 'Only with a friend'], answer: 'No' },
       { prompt: 'Email from “support@amaz0n-help.com”. The biggest red flag?', choices: ['A zero instead of the letter “o”', 'It says “support”', 'It has a .com', 'It is an email'], answer: 'A zero instead of the letter “o”' },
       { prompt: 'AI “hallucination” means…', choices: ['AI confidently gives made-up information', 'AI sees ghosts', 'AI is overheating', 'AI is sleeping'], answer: 'AI confidently gives made-up information' },
       { prompt: 'Which file is the biggest?', choices: ['A 2-hour movie', 'A photo', 'A text message', 'A song'], answer: 'A 2-hour movie' },

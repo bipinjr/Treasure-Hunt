@@ -1,7 +1,8 @@
 // Chiptune sound effects synthesized with WebAudio: no audio files to load.
 let ctx = null;
-let muted = false;
-try { muted = localStorage.getItem('tq_mute') === '1'; } catch {}
+let muted = true;
+// sound is off unless a player turns it on (no speakers at the venue; also avoids a slow first keypress)
+try { muted = localStorage.getItem('tq_mute') !== '0'; } catch {}
 
 function ac() {
   if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -52,5 +53,5 @@ export const sfx = {
   lose: () => seq([392, 330, 262, 196], 0.18, { vol: 0.1, type: 'triangle' }),
   isMuted: () => muted,
   toggle() { muted = !muted; try { localStorage.setItem('tq_mute', muted ? '1' : '0'); } catch {} if (!muted) this.click(); return muted; },
-  unlock: () => { try { ac(); } catch {} },
+  unlock: () => { if (!muted) try { ac(); } catch {} },
 };

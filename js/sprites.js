@@ -349,4 +349,7 @@ const SCENERY = {
     <g fill="#1a0a22"><path d="M80 214 l30 -120 l30 120z"/><path d="M860 214 l26 -100 l26 100z"/><path d="M180 214 l18 -70 l18 70z"/><path d="M770 214 l18 -76 l18 76z"/></g>
     <rect y="212" width="1000" height="88" fill="#0e0612"/>`,
 };
-export const sceneSVG = id => `<svg viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${SCENERY[id] || ''}</svg>`;
+// glowing motes (fireflies, embers, sparks) that drift up through each scene
+const MOTE = { crypt: '#cfe0ff', forge: '#ffb347', shields: '#eaff7a', heart: '#7df9ff', boss: '#ff7a8a' };
+const motes = id => Array.from({ length: 12 }, (_, i) => `<circle class="mote" cx="${40 + i * 80 + (i % 3) * 13}" cy="${200 + (i % 4) * 20}" r="${i % 3 ? 2 : 3}" fill="${MOTE[id] || '#fff'}" style="animation-duration:${5 + (i % 5)}s;animation-delay:${(i * .7) % 5}s;filter:drop-shadow(0 0 4px ${MOTE[id] || '#fff'})"/>`).join('');
+export const sceneSVG = id => `<svg viewBox="0 0 1000 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${SCENERY[id] || ''}${motes(id)}</svg>`;

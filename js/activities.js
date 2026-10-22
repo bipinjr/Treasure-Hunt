@@ -232,8 +232,9 @@ const RENDER = {
       host.querySelector('#road-q').textContent = `${g + 1}/${q.gates.length}  ${G.q}`;
       gate.innerHTML = G.lanes.map(t => `<span>${esc(t)}</span>`).join('');
       gate.classList.remove('roll'); void gate.offsetWidth; gate.classList.add('roll');
+      setTimeout(arrive, 3600);   // timer, not animationend: always resolves even if the browser skips frames
     };
-    gate.onanimationend = () => {
+    const arrive = () => {
       const G = q.gates[g];
       const ok = G.lanes[lane] === G.answer;
       gate.children[lane]?.classList.add(ok ? 'pass' : 'crash');
@@ -281,7 +282,7 @@ const RENDER = {
         if (over) return el.remove();
         const p = (now - t0) / dur;
         el.style.top = `${p * 82}%`;
-        if (p < 1) return requestAnimationFrame(step);
+        if (p < 1) return setTimeout(() => step(performance.now()), 30);   // timer, not rAF: keeps falling even if frames are skipped
         const caught = Math.abs(ix - x) < .13;   // basket half-width as a share of the sky
         el.classList.add(caught ? (good ? 'yum' : 'yuck') : 'gone');
         setTimeout(() => el.remove(), 400);
@@ -290,7 +291,7 @@ const RENDER = {
         if (got >= need) return end(true);
         if (--left === 0) end(got >= need);
       };
-      requestAnimationFrame(step);
+      step(t0);
     }, 900 + k * 1300));
   },
 

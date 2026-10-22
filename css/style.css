@@ -841,3 +841,134 @@ body[data-zone] .stage::before, body[data-zone] .stage::after, body[data-zone] .
 /* tougher monsters: bigger, crisp dark outline */
 #enemy:not(.boss):not(.chest-foe) { width: clamp(130px, 13.5vw, 190px); }
 #enemy .body svg { filter: drop-shadow(0 0 2px rgba(0,0,0,.95)) drop-shadow(0 10px 0 rgba(0,0,0,.45)); }
+
+/* ==========================================================================
+   One screen, no scrolling: the stage takes a fixed share of the height and
+   every activity is sized to fit the rest. Actors scale with the stage height.
+   ========================================================================== */
+.game { grid-template-rows: auto auto clamp(180px, 28vh, 300px) minmax(0, 1fr); }
+.stage, .game:has(.activity) .stage { min-height: 0; }
+.qcard { max-height: none; min-height: 0; overflow: hidden; align-content: start; gap: 10px; padding: 14px 18px; }
+.prompt { font-size: clamp(19px, 1.6vw, 26px); }
+
+/* actors stand on the scenery's ground line and always fit inside the stage */
+.actor svg { width: auto; height: 100%; }
+.actor .body { height: 100%; }
+#knight, #enemy, #enemy:not(.boss):not(.chest-foe) { width: auto; height: 56%; bottom: 22%; }
+#enemy.boss { width: auto; height: 60%; bottom: 20%; }
+#enemy.chest-foe { width: auto; height: 30%; bottom: 24%; }
+#knight { left: 12%; }
+#enemy { right: 12%; }
+.nameplate .hpbar { width: 180px; }
+
+/* activities sized to the space left under the stage */
+.range, .road, .sky { height: clamp(150px, 25vh, 240px); }
+.grid { --c: clamp(30px, 4.6vh, 50px); }
+.cell { font-size: calc(var(--c) * .5); }
+.bot { font-size: calc(var(--c) * .6); }
+.pad { grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 44px); }
+.mcard { min-height: clamp(44px, 6.5vh, 64px); }
+.bulb { padding: 8px 6px; gap: 6px; } .bulb .glass { width: 36px; height: 36px; }
+.slot { min-height: 44px; }
+.abc span { width: 26px; height: 28px; font-size: 15px; }
+.sort-row { padding: 6px 12px; }
+.act-input { font-size: 22px; }
+
+/* clean look: no dark vignette, no heavy glows */
+.vignette { display: none; }
+#knight .body svg, #knight[data-lv] .body svg { filter: drop-shadow(0 0 1.5px rgba(0,0,0,.9)) drop-shadow(0 6px 0 rgba(0,0,0,.3)); }
+#enemy .body svg, #enemy.boss .body svg { filter: drop-shadow(0 0 1.5px rgba(0,0,0,.9)) drop-shadow(0 6px 0 rgba(0,0,0,.3)); }
+
+/* end screen: results left, feedback right, so it fits without scrolling */
+.end { width: min(1180px, 100%); max-height: none; overflow: visible; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); column-gap: 28px; align-items: start; padding: 26px 30px; }
+.end > .kicker, .end > .title, .end > .sub { grid-column: 1 / -1; }
+.end > .chest, .end > .clue, .end > .stats, .end > .row { grid-column: 1; }
+.end > .feedback { grid-column: 2; grid-row: 3 / span 4; margin-top: 0; }
+.end .chest { width: 160px; height: 130px; } .end .chest svg { width: 160px; } .end .chest .clid { bottom: 70px; }
+.end .clue { margin: 8px auto 14px; font-size: 19px; padding: 14px 18px; }
+.end .stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.end .stat { padding: 10px 6px; }
+.feedback { grid-template-columns: 1fr 1fr; gap: 10px 16px; padding: 14px 16px; }
+.feedback h3, .feedback .fb-sub, .feedback .btn, .feedback .fb-msg, .feedback .fb-q:has(textarea), .feedback .fb-q:has(.fb-text) { grid-column: 1 / -1; }
+.fb-q legend { font-size: 15px; }
+.stars label { font-size: 24px; }
+.chips label span { padding: 5px 11px; font-size: 14px; }
+.feedback textarea { min-height: 0; }
+@media (max-width: 1000px) { .end { grid-template-columns: 1fr; } .end > .feedback { grid-column: 1; grid-row: auto; } }
+
+/* ==========================================================================
+   Float + glow accents: only transform/opacity are animated (cheap on school PCs);
+   glow sits on a few key things, not over the whole screen.
+   ========================================================================== */
+/* lane racer fits the space below the stage */
+.road { height: clamp(130px, 17.5vh, 220px); }
+.car { width: 34px; height: 56px; }
+.gate.roll { animation-name: gateRollFit; }
+@keyframes gateRollFit { from { top: -60px; } to { top: calc(100% - 100px); } }
+
+/* animated "electric" border around the challenge card */
+@property --spin { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+.qcard { position: relative; isolation: isolate; }
+.qcard::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 2px; pointer-events: none; z-index: -1;
+  background: conic-gradient(from var(--spin), transparent 0 62%, color-mix(in srgb, var(--accent) 80%, transparent) 76%, var(--gold-2) 82%, transparent 92%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: spinBorder 7s linear infinite; }
+@keyframes spinBorder { to { --spin: 360deg; } }
+
+/* collected runes glow softly; the current checkpoint pulses */
+.rune.got { position: relative; }
+.rune.got::after { content: ''; position: absolute; inset: -4px; border-radius: 8px; background: radial-gradient(circle, rgba(255,223,138,.55), transparent 70%); z-index: -1; animation: softPulse 2.6s ease-in-out infinite; }
+@keyframes softPulse { 50% { opacity: .35; transform: scale(.92); } }
+.track .pip.now { animation: pulse 1.2s ease-in-out infinite; }
+
+/* level badge + zone gem float and shine */
+.lv-badge { animation: floaty 3s ease-in-out infinite; }
+.zone-gem { animation: gemSpin 6s linear infinite; }
+@keyframes gemSpin { to { transform: rotate(405deg); } }
+@keyframes floaty { 50% { transform: translateY(-3px); } }
+
+/* bonus chest floats on a golden aura */
+#enemy.chest-foe::before { content: ''; position: absolute; left: -20%; right: -20%; bottom: -10%; height: 80%; border-radius: 50%; background: radial-gradient(ellipse, rgba(255,215,100,.45), transparent 65%); animation: softPulse 2s ease-in-out infinite; z-index: -1; }
+
+/* glowing motes drifting up through every scene */
+.mote { animation: moteRise linear infinite; opacity: 0; }
+@keyframes moteRise { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: .9; } 85% { opacity: .7; } 100% { transform: translateY(-160px); opacity: 0; } }
+
+/* primary buttons: light sweep on hover */
+.btn:not(.ghost):not(.danger) { overflow: hidden; }
+.btn:not(.ghost):not(.danger)::after { content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent); transform: skewX(-20deg); transition: left .6s ease; pointer-events: none; }
+.btn:not(.ghost):not(.danger):hover::after { left: 120%; }
+
+/* choices and activity buttons lift with an accent glow */
+.choice:hover:not(:disabled), .tile:hover, .bulb:hover, .pad-btn:hover, .sort-btn:hover, .mcard:not(.up):hover { box-shadow: 0 6px 0 rgba(0,0,0,.45), 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); }
+
+/* end-screen stats float in one after another */
+.stat { animation: rise .5s var(--ease-out) both; }
+.stat:nth-child(2) { animation-delay: .08s; } .stat:nth-child(3) { animation-delay: .16s; } .stat:nth-child(4) { animation-delay: .24s; } .stat:nth-child(5) { animation-delay: .32s; }
+@media (prefers-reduced-motion: reduce) { .qcard::before, .rune.got::after, .mote, .lv-badge, .zone-gem { animation: none; } }
+
+/* robot controls side by side, catch sky shorter: both fit under the stage at 768px tall */
+.robot-ctl { grid-template-columns: auto auto; grid-template-areas: "pad prog" "pad run"; align-items: center; column-gap: 18px; }
+.robot-ctl .pad { grid-area: pad; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 38px); }
+.robot-ctl .program { grid-area: prog; }
+.robot-ctl .row { grid-area: run; }
+.pad-btn { font-size: 20px; }
+.sky { height: clamp(130px, 18vh, 220px); }
+
+.range { height: clamp(140px, 22vh, 240px); }
+
+/* snappier: shorter rune flight and walk to match the faster game loop */
+.flyer { transition-duration: .45s; }
+.stage.walking::before { animation-duration: .3s; }
+
+/* last fit pass at 1366x768: sort in two columns, slightly shorter arenas */
+.qcard { padding: 12px 16px; gap: 8px; }
+.sort-list { grid-template-columns: 1fr 1fr; gap: 8px; }
+.sort-row { padding: 6px 10px; font-size: 16px; }
+.sort-btn { padding: 6px 12px; font-size: 15px; }
+.range { height: clamp(130px, 19vh, 240px); }
+.sky { height: clamp(120px, 16.5vh, 220px); }
+.grid { --c: clamp(28px, 4.2vh, 50px); }
+.slot { min-height: 40px; padding: 8px 10px; }
+.tile { padding: 9px 14px; font-size: 17px; }
+@media (max-width: 1100px) { .sort-list { grid-template-columns: 1fr; } }
