@@ -718,8 +718,8 @@ function practiceEnd(won) {
 const FB_STARS = [
   ['overall', 'How is the overall experience?', true],
   ['event', 'How was the BCA Tech Quest event overall?', true],
-  ['organisation', 'How well was the event organised (timing, venue, instructions)?'],
-  ['organisers', 'How helpful and friendly were the organisers and volunteers?'],
+  ['organisation', 'How well was the event organised (timing, venue, instructions)?', true],
+  ['organisers', 'How helpful and friendly were the organisers and volunteers?', true],
 ];
 const fbKey = () => 'tq_fb_' + cred?.id;
 function feedbackForm() {
@@ -727,30 +727,30 @@ function feedbackForm() {
   try { sent = !!localStorage.getItem(fbKey()); } catch {}
   if (sent) return '<div class="feedback done"><p>✔ Thanks for your feedback!</p></div>';
   const chips = (k, label, opts) => `
-    <fieldset class="fb-q"><legend>${label}</legend>
-      <div class="chips">${opts.map(v => `<label><input type="radio" name="${k}" value="${esc(v)}"><span>${esc(v)}</span></label>`).join('')}</div>
+    <fieldset class="fb-q"><legend>${label} <span class="req">*</span></legend>
+      <div class="chips">${opts.map(v => `<label><input type="radio" name="${k}" value="${esc(v)}" required><span>${esc(v)}</span></label>`).join('')}</div>
     </fieldset>`;
   const stars = (k, label, req) => `
     <fieldset class="fb-q"><legend>${label}${req ? ' <span class="req">*</span>' : ''}</legend>
       <div class="stars" role="radiogroup">${[5, 4, 3, 2, 1].map(n => `<label><input type="radio" name="${k}" value="${n}" ${req ? 'required' : ''}><span aria-hidden="true">★</span><span class="sr">${n} out of 5</span></label>`).join('')}</div>
     </fieldset>`;
   return `
-    <form class="feedback" id="feedback">
+    <form class="feedback" id="feedback" novalidate>
       <h3>Help us make the next Tech Quest better</h3>
       ${FB_STARS.map(([k, l, r]) => stars(k, l, r)).join('')}
-      <fieldset class="fb-q"><legend>Would you consider studying BCA at our college?</legend>
-        <div class="chips">${['Yes', 'Maybe', 'No'].map(v => `<label><input type="radio" name="interest" value="${v}"><span>${v}</span></label>`).join('')}</div>
+      <fieldset class="fb-q"><legend>Would you consider studying BCA at our college? <span class="req">*</span></legend>
+        <div class="chips">${['Yes', 'Maybe', 'No'].map(v => `<label><input type="radio" name="interest" value="${v}" required><span>${v}</span></label>`).join('')}</div>
       </fieldset>
       <h4 class="fb-sub">About you</h4>
       ${chips('stream', 'Which stream are you in?', ['Science', 'Commerce', 'Arts', 'Other'])}
       ${chips('plan', 'What do you plan to study after PU?', ['BCA', 'BCom / BBA', 'BSc', 'Engineering', 'Other', 'Not decided'])}
-      <h4 class="fb-sub">Your details <span class="opt">(optional)</span></h4>
-      <fieldset class="fb-q half"><legend>Your real name</legend><input class="fb-text" name="real_name" maxlength="80" autocomplete="off"></fieldset>
-      <fieldset class="fb-q half"><legend>Email</legend><input class="fb-text" type="email" name="email" maxlength="120" autocomplete="off"></fieldset>
-      <fieldset class="fb-q half"><legend>Parent's name</legend><input class="fb-text" name="parent_name" maxlength="80" autocomplete="off"></fieldset>
-      <fieldset class="fb-q half"><legend>Parent's phone number</legend><input class="fb-text" type="tel" name="parent_phone" maxlength="15" pattern="[0-9+ ]{10,15}" title="10-digit phone number" autocomplete="off"></fieldset>
-      <fieldset class="fb-q"><legend>Any suggestions for the organisers or the college? <span class="opt">(optional)</span></legend>
-        <textarea name="comment" maxlength="500" rows="2" placeholder="What did you like? What should we do better next time?"></textarea>
+      <h4 class="fb-sub">Your details</h4>
+      <fieldset class="fb-q half"><legend>Your real name <span class="req">*</span></legend><input required class="fb-text" name="real_name" maxlength="80" autocomplete="off"></fieldset>
+      <fieldset class="fb-q half"><legend>Email <span class="req">*</span></legend><input required class="fb-text" type="email" name="email" maxlength="120" autocomplete="off"></fieldset>
+      <fieldset class="fb-q half"><legend>Parent's name <span class="req">*</span></legend><input required class="fb-text" name="parent_name" maxlength="80" autocomplete="off"></fieldset>
+      <fieldset class="fb-q half"><legend>Parent's phone number <span class="req">*</span></legend><input required class="fb-text" type="tel" name="parent_phone" maxlength="15" pattern="[0-9+ ]{10,15}" title="10-digit phone number" autocomplete="off"></fieldset>
+      <fieldset class="fb-q"><legend>Any suggestions for the organisers or the college? <span class="req">*</span></legend>
+        <textarea required name="comment" maxlength="500" rows="2" placeholder="What did you like? What should we do better next time?"></textarea>
       </fieldset>
       <button class="btn" type="submit">Send feedback</button>
       <p class="fb-msg" role="status"></p>
@@ -762,15 +762,16 @@ function bindFeedback() {
   f.onsubmit = async e => {
     e.preventDefault();
     const d = new FormData(f), msg = f.querySelector('.fb-msg');
-    if (!d.get('overall') || !d.get('event')) { msg.textContent = 'Please rate the overall experience and the BCA event.'; return; }
+    const missing = ['overall', 'event', 'organisation', 'organisers', 'interest', 'stream', 'plan', 'real_name', 'email', 'parent_name', 'parent_phone', 'comment'].filter(k => !String(d.get(k) || '').trim());
+    if (missing.length) { msg.textContent = 'Please answer every question (marked *) before sending.'; return; }
+    if (!f.checkValidity()) { msg.textContent = 'Check the email and the 10-digit phone number.'; return; }
     f.querySelector('button').disabled = true; msg.textContent = 'Sending…';
     const num = k => d.get(k) ? +d.get(k) : null;
     const { error } = await sb.rpc('submit_feedback', { p_id: cred.id, p_token: cred.token, p_overall: num('overall'), p_event: num('event'), p_organisation: num('organisation'), p_organisers: num('organisers'), p_interest: d.get('interest') || '', p_comment: d.get('comment') || '',
       p_stream: d.get('stream') || '', p_pu_year: '2nd PU', p_plan: d.get('plan') || '', p_college: d.get('college') || '' });
     if (error) { f.querySelector('button').disabled = false; msg.textContent = 'Could not send. Check the internet and try again.'; return; }
     // contact details go through their own RPC so submit_feedback stays compatible with older open tabs
-    if (['real_name', 'email', 'parent_name', 'parent_phone'].some(k => d.get(k)))
-      await sb.rpc('submit_contact', { p_id: cred.id, p_token: cred.token, p_real_name: d.get('real_name') || '', p_email: d.get('email') || '', p_parent_name: d.get('parent_name') || '', p_parent_phone: d.get('parent_phone') || '' });
+    await sb.rpc('submit_contact', { p_id: cred.id, p_token: cred.token, p_real_name: d.get('real_name') || '', p_email: d.get('email') || '', p_parent_name: d.get('parent_name') || '', p_parent_phone: d.get('parent_phone') || '' });
     try { localStorage.setItem(fbKey(), '1'); } catch {}
     f.outerHTML = '<div class="feedback done"><p>✔ Thanks for your feedback!</p></div>';
     sfx.coin();
