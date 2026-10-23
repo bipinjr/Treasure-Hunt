@@ -44,6 +44,7 @@
         <label for="mins" style="color:var(--muted)">Minutes per player</label>
         <input class="field" id="mins" type="number" min="1" max="120" value="20" style="max-width:110px;flex:none">
         <button class="btn" id="start">Save time limit</button>
+        <button class="btn" id="finalize-all" title="Lock the score of everyone whose time ran out and move them to Finished">✔ Finalise time-up players</button>
         <button class="btn danger" id="reset">⟲ Reset all</button>
       </div>
       <p class="msg" id="msg" role="status"></p>
@@ -206,6 +207,7 @@
           <td class="num ${p.tab_strikes >= 2 || p.restarts ? 'warn' : ''}">${p.tab_strikes}/3${p.restarts ? ` · ${p.restarts}× restarted` : ''}</td>
           <td class="num ${p.finished_at ? 'fin' : ''}">${t == null ? '–' : fmt(t)}</td>
           <td style="white-space:nowrap"><button class="adj" data-id="${p.id}" data-n="${esc(p.name)}">± Time</button>
+            ${p.finished_at ? '' : `<button class="fin-one" data-id="${p.id}" data-n="${esc(p.name)}">✔ Finalise</button>`}
             <button class="del" data-id="${p.id}" data-n="${esc(p.name)}">Remove</button></td></tr>`;
       }).join('') : `<tr><td colspan="13" class="empty-row">${q ? 'No player matches that name.' : 'No players yet. Share the game link and ask everyone to enter their name.'}</td></tr>`;
       $('rows').querySelectorAll('.sel').forEach(b => b.onclick = () => { selected = b.dataset.id; render(); $('scorecard').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
@@ -213,6 +215,9 @@
       renderCard();
       $('rows').querySelectorAll('.del').forEach(b => b.onclick = async () => {
         if (confirm(`Remove "${b.dataset.n}" from the game?`) && await call('admin_delete_player', { p_id: b.dataset.id })) { msg(`Removed ${b.dataset.n}.`); refresh(); }
+      });
+      $('rows').querySelectorAll('.fin-one').forEach(b => b.onclick = async () => {
+        if (confirm(`Lock "${b.dataset.n}"'s current score as final?`) && await call('admin_finalize', { p_id: b.dataset.id })) { msg(`${b.dataset.n} finalised.`); refresh(); }
       });
       $('rows').querySelectorAll('.adj').forEach(b => b.onclick = async () => {
         const s = parseInt(prompt(`Seconds to add for "${b.dataset.n}" (use a negative number to refund):`, '10'), 10);
@@ -387,6 +392,12 @@
     $('start').onclick = async () => {
       const m = Math.max(1, Math.min(120, parseInt($('mins').value, 10) || 20));
       if (await call('admin_start', { minutes: m })) { msg(`Saved: every new player gets ${m} minute${m === 1 ? '' : 's'} from the moment they join.`); refresh(); }
+    };
+    $('finalize-all').onclick = async () => {
+      const { data, error } = await sb.rpc('admin_finalize', { pw });
+      if (error) return msg(error.message, true);
+      msg(data ? `Finalised ${data} player${data === 1 ? '' : 's'} whose time ran out.` : 'Nobody to finalise: everyone still playing has time left.');
+      refresh();
     };
     $('reset').onclick = async () => {
       if (prompt('This deletes ALL players and scores for good. Export the Excel first. Type RESET to confirm:') === 'RESET' && await call('admin_reset')) { msg('Everything reset. The event stays open for new players.'); refresh(); }

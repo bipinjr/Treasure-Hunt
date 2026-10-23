@@ -8,7 +8,8 @@ export const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 export const TOTAL_STAGES = 28;   // must match submit_answer in SQL (4 zones x 7, bonus chest at stage % 7 === 6)
 
 // Short progress text used by every screen
-export const stageLabel = p => p.finished_at ? fmt(p.total_ms) : p.stage >= TOTAL_STAGES ? `BOSS ${p.boss_hp}HP` : `${p.stage}/${TOTAL_STAGES}`;
+// finalised early (time up / stuck): show how far they got next to their time
+export const stageLabel = p => p.finished_at ? (p.boss_hp > 0 ? `${Math.min(p.stage, TOTAL_STAGES)}/${TOTAL_STAGES} · ${fmt(p.total_ms)}` : fmt(p.total_ms)) : p.stage >= TOTAL_STAGES ? `BOSS ${p.boss_hp}HP` : `${p.stage}/${TOTAL_STAGES}`;
 export const zoneLabel = p => p.finished_at ? 'Finished' : p.stage >= TOTAL_STAGES ? 'Boss' : `Zone ${Math.floor(p.stage / 7) + 1}`;
 
 // Server clock offset so every PC shows the same countdown
@@ -42,7 +43,8 @@ export function rank(players) {
   return [...players].sort((a, b) => {
     const fa = a.finished_at != null, fb = b.finished_at != null;
     if (fa !== fb) return fa ? -1 : 1;
-    if (fa) return a.total_ms - b.total_ms || b.stars - a.stars || a.wrong - b.wrong || new Date(a.finished_at) - new Date(b.finished_at);
+    // among finished, beating the boss beats being finalised early
+    if (fa) return b.stage - a.stage || a.boss_hp - b.boss_hp || a.total_ms - b.total_ms || b.stars - a.stars || a.wrong - b.wrong || new Date(a.finished_at) - new Date(b.finished_at);
     return b.stage - a.stage || a.boss_hp - b.boss_hp || b.stars - a.stars || (a.penalty_sec - a.bonus_sec) - (b.penalty_sec - b.bonus_sec) || a.wrong - b.wrong;
   });
 }

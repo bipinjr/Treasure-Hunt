@@ -100,7 +100,7 @@ function show(name) {
 function route() {
   if (practice) return;
   if (!me) { if (screen !== 'rules') { show('name'); setTimeout(() => $('name')?.focus(), 50); } return; }
-  if (me.finished_at) { if (screen !== 'end') victory(); return; }
+  if (me.finished_at) { if (screen !== 'end') me.boss_hp > 0 ? timeUp() : victory(); return; }
   // no waiting room: each player's run starts as soon as they join
   if (eventPhase(ev) === 'ended' || now() >= playerEnd(me, ev)) { if (screen !== 'end') timeUp(); }
   else if (screen !== 'game') startGame();
