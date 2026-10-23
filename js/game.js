@@ -744,6 +744,11 @@ function feedbackForm() {
       <h4 class="fb-sub">About you</h4>
       ${chips('stream', 'Which stream are you in?', ['Science', 'Commerce', 'Arts', 'Other'])}
       ${chips('plan', 'What do you plan to study after PU?', ['BCA', 'BCom / BBA', 'BSc', 'Engineering', 'Other', 'Not decided'])}
+      <h4 class="fb-sub">Your details <span class="opt">(optional)</span></h4>
+      <fieldset class="fb-q half"><legend>Your real name</legend><input class="fb-text" name="real_name" maxlength="80" autocomplete="off"></fieldset>
+      <fieldset class="fb-q half"><legend>Email</legend><input class="fb-text" type="email" name="email" maxlength="120" autocomplete="off"></fieldset>
+      <fieldset class="fb-q half"><legend>Parent's name</legend><input class="fb-text" name="parent_name" maxlength="80" autocomplete="off"></fieldset>
+      <fieldset class="fb-q half"><legend>Parent's phone number</legend><input class="fb-text" type="tel" name="parent_phone" maxlength="15" pattern="[0-9+ ]{10,15}" title="10-digit phone number" autocomplete="off"></fieldset>
       <fieldset class="fb-q"><legend>Any suggestions for the organisers or the college? <span class="opt">(optional)</span></legend>
         <textarea name="comment" maxlength="500" rows="2" placeholder="What did you like? What should we do better next time?"></textarea>
       </fieldset>
@@ -763,6 +768,9 @@ function bindFeedback() {
     const { error } = await sb.rpc('submit_feedback', { p_id: cred.id, p_token: cred.token, p_overall: num('overall'), p_event: num('event'), p_organisation: num('organisation'), p_organisers: num('organisers'), p_interest: d.get('interest') || '', p_comment: d.get('comment') || '',
       p_stream: d.get('stream') || '', p_pu_year: '2nd PU', p_plan: d.get('plan') || '', p_college: d.get('college') || '' });
     if (error) { f.querySelector('button').disabled = false; msg.textContent = 'Could not send. Check the internet and try again.'; return; }
+    // contact details go through their own RPC so submit_feedback stays compatible with older open tabs
+    if (['real_name', 'email', 'parent_name', 'parent_phone'].some(k => d.get(k)))
+      await sb.rpc('submit_contact', { p_id: cred.id, p_token: cred.token, p_real_name: d.get('real_name') || '', p_email: d.get('email') || '', p_parent_name: d.get('parent_name') || '', p_parent_phone: d.get('parent_phone') || '' });
     try { localStorage.setItem(fbKey(), '1'); } catch {}
     f.outerHTML = '<div class="feedback done"><p>✔ Thanks for your feedback!</p></div>';
     sfx.coin();

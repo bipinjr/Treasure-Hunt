@@ -1020,3 +1020,10 @@ body[data-zone] .stage::before, body[data-zone] .stage::after, body[data-zone] .
 /* crossword fits under the stage at 768px tall */
 .cw-grid { --cw: clamp(28px, 4vh, 44px); gap: 3px; }
 .cw-clues { font-size: 15px; gap: 6px; }
+
+/* contact details sit two per row */
+.feedback .fb-q.half { grid-column: auto; }
+.feedback .fb-q.half .fb-text { padding: 7px 10px; font-size: 15px; }
+.feedback .fb-q.half { gap: 2px; }
+.feedback .fb-q.half legend { font-size: 14px; margin-bottom: 0; }
+.feedback .fb-sub .opt { font-family: var(--body, inherit); font-size: 12px; color: var(--muted); letter-spacing: 0; }
